@@ -2,7 +2,7 @@
 import React from 'react';
 import { componentMap } from '../builder-elements/componentMap';
 
-const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedComponentId, onAddComponentRequestToContainer }) => {
+const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedComponentId, onAddComponentRequestToContainer, updateChildPlacement }) => {
     const renderComponent = (componentConfig) => {
         const ComponentToRender = componentMap[componentConfig.type];
 
@@ -20,6 +20,7 @@ const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedC
                 isSelected={selectedComponentId === componentConfig.id}
                 selectedComponentId={selectedComponentId} // Pass down for child selection logic in Container
                 onAddComponentRequest={onAddComponentRequestToContainer} // Pass down to containers
+                updateChildPlacement={updateChildPlacement} // Pass for containers
             />
         );
     };

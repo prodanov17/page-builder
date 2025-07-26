@@ -1,18 +1,32 @@
+import { type ComponentType } from "react";
 import ButtonElement from "./ButtonElement";
 import TextElement from "./TextElement";
 import ImageElement from "./ImageElement";
 import ContainerElement from "./ContainerElement";
-// import InputElement from './InputElement'; // If you create one
+import type { BaseComponentProps, BuilderComponent } from "@/utils/types";
 
-export const componentMap = {
+type ComponentMapType = {
+  [K in BuilderComponent["type"]]: ComponentType<BaseComponentProps<any>>;
+};
+
+export const componentMap: ComponentMapType = {
   button: ButtonElement,
   text: TextElement,
   image: ImageElement,
   container: ContainerElement,
-  // input: InputElement,
 };
 
-export const componentPropsMap = {
+type PropField = {
+  name: string;
+  label: string;
+  type: "string" | "number" | "boolean";
+};
+
+type ComponentPropsMapType = {
+  [K in BuilderComponent["type"]]: PropField[];
+};
+
+export const componentPropsMap: ComponentPropsMapType = {
   button: [
     {
       name: "width",
@@ -64,7 +78,6 @@ export const componentPropsMap = {
       type: "string",
     },
   ],
-
   container: [
     {
       name: "backgroundColor",

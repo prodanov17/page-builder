@@ -1,6 +1,7 @@
-import React from 'react';
+import { type FC, type MouseEvent } from 'react';
+import type { BaseComponentProps, ButtonProps } from '@/utils/types';
 
-const ButtonElement = ({ id, props, onSelect, isSelected }) => {
+const ButtonElement: FC<BaseComponentProps<ButtonProps>> = ({ id, props, onSelect, isSelected }) => {
     const style = {
         padding: props.padding || '10px 15px',
         backgroundColor: props.backgroundColor || '#007bff',
@@ -10,12 +11,18 @@ const ButtonElement = ({ id, props, onSelect, isSelected }) => {
         fontSize: props.fontSize || '16px',
         borderRadius: props.borderRadius || '4px',
         cursor: 'pointer',
-        // Add any other styleable props from your schema
+    } as const;
+
+    const handleClick = (e: MouseEvent) => {
+        e.stopPropagation();
+        onSelect(id);
     };
+
     return (
-        <button style={style} onClick={(e) => { e.stopPropagation(); onSelect(id); }}>
+        <button style={style} onClick={handleClick}>
             {props.text || 'Button'}
         </button>
     );
 };
+
 export default ButtonElement;

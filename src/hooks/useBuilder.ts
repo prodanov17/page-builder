@@ -139,6 +139,31 @@ const useBuilder = () => {
     [builder],
   );
 
+  const updateChildPlacement = useCallback(
+    (childId: string, placement: Partial<{ order: number; alignSelf: string }>) => {
+      if (!builder) return;
+      function updatePlacementRecursive(components: Component[]): Component[] {
+        return components.map((comp) => {
+          if (comp.id === childId) {
+            return {
+              ...comp,
+              placement: { ...comp.placement, ...placement },
+            };
+          }
+          if (comp.children) {
+            return { ...comp, children: updatePlacementRecursive(comp.children) };
+          }
+          return comp;
+        });
+      }
+      setBuilderInternal((prevBuilder) => ({
+        ...prevBuilder!,
+        components: updatePlacementRecursive(prevBuilder!.components),
+      }));
+    },
+    [builder],
+  );
+
   // getBuilder is not strictly needed as `builder` is returned.
   // const getBuilder = () => builder;
 
@@ -154,6 +179,7 @@ const useBuilder = () => {
     updateComponent,
     setStyles,
     resetBuilder,
+    updateChildPlacement, // <-- add to return
   };
 };
 

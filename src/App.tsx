@@ -17,6 +17,7 @@ function App() {
         removeComponent: removeBuilderComponent,
         updateComponent: updateBuilderComponent,
         setStyles: setBuilderStyles,
+        updateChildPlacement, // <-- add this
     } = useBuilder();
 
     const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
@@ -32,7 +33,8 @@ function App() {
                 components: [], // Start with a blank canvas
                 styles: { // Global styles for the canvas itself
                     backgroundColor: '#ffffff',
-                    padding: '20px',
+                    padding: '0',
+                    margin: '0',
                     minHeight: 'calc(100vh - 40px)', // Ensure canvas is visible
                     border: '1px solid #eee',
                 },
@@ -45,16 +47,44 @@ function App() {
         setSelectedComponentId(id);
     }, []);
 
-    const handleAddComponent = useCallback((type: any, defaultProps = {}, children?: any[]) => { // 'any' for simplicity, use Component['type']
+    const handleAddComponent = useCallback((type: any, defaultProps = {}, children?: any[]) => {
         const newComponent = {
             id: generateId(),
             type: type,
             props: { ...defaultProps },
             children: children || (type === 'container' ? [] : undefined),
         };
-        addBuilderComponent(newComponent, targetParentIdForNewComponent || undefined);
+        // If a parent is targeted, use it. Otherwise, if a container is selected, add to it.
+        let parentId = targetParentIdForNewComponent;
+        if (!parentId && selectedComponentId && builder) {
+            // Find the selected component
+            const findComponentRecursive = (component: any, id: string | null): any | null => {
+                if (!id) return null;
+                if (component.id === id) {
+                    return component;
+                }
+                if (component.children) {
+                    for (const child of component.children) {
+                        const found = findComponentRecursive(child, id);
+                        if (found) {
+                            return found;
+                        }
+                    }
+                }
+                return null;
+            };
+            let selected = null;
+            for (const comp of builder.components) {
+                selected = findComponentRecursive(comp, selectedComponentId);
+                if (selected) break;
+            }
+            if (selected && selected.type === 'container') {
+                parentId = selectedComponentId;
+            }
+        }
+        addBuilderComponent(newComponent, parentId || undefined);
         setTargetParentIdForNewComponent(null); // Reset after adding
-    }, [addBuilderComponent, targetParentIdForNewComponent]);
+    }, [addBuilderComponent, targetParentIdForNewComponent, selectedComponentId, builder]);
 
     // This function can be called by a ContainerElement when it wants to add a child
     const handleAddComponentRequestToContainer = useCallback((parentId: string) => {
@@ -106,6 +136,7 @@ function App() {
                         onSelectComponent={handleSelectComponent}
                         selectedComponentId={selectedComponentId}
                         onAddComponentRequestToContainer={handleAddComponentRequestToContainer}
+                        updateChildPlacement={updateChildPlacement} // <-- pass down
                     />
                 }
                 properties={

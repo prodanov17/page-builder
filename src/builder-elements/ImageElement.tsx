@@ -1,22 +1,30 @@
-import React from 'react';
+import { type FC, type MouseEvent } from 'react';
+import type { BaseComponentProps, ImageProps } from '@/utils/types';
 
-const ImageElement = ({ id, props, onSelect, isSelected }) => {
+const ImageElement: FC<BaseComponentProps<ImageProps>> = ({ id, props, onSelect, isSelected }) => {
     const style = {
         width: props.width || '150px',
-        height: props.height || 'auto', // or props.height || '100px'
+        height: props.height || 'auto',
         border: `2px solid ${isSelected ? 'red' : 'transparent'}`,
         margin: props.margin || '5px',
         objectFit: props.objectFit || 'cover',
         borderRadius: props.borderRadius || '0px',
         cursor: 'pointer',
+    } as const;
+
+    const handleClick = (e: MouseEvent) => {
+        e.stopPropagation();
+        onSelect(id);
     };
+
     return (
         <img
             src={props.src || 'https://via.placeholder.com/150x100.png?text=Image'}
             alt={props.alt || 'placeholder image'}
             style={style}
-            onClick={(e) => { e.stopPropagation(); onSelect(id); }}
+            onClick={handleClick}
         />
     );
 };
+
 export default ImageElement;
