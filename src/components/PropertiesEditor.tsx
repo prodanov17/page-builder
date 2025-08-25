@@ -16,8 +16,21 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }) =
         }));
     }, []);
 
+    // Helper to find parent container and update its backgroundImage
     const handleApply = () => {
-        onUpdateComponent(component.id, { props: currentProps });
+        // If this is an image and background is checked, move src to parent container backgroundImage
+        if (component.type === 'image' && currentProps.background) {
+            // Find parent container in builder tree
+            // We'll assume the parentId is passed as component.parentId (if available), otherwise, this logic would need to be lifted up
+            // For now, emit a custom event to request this operation, or you can extend the API to pass parentId
+            // Here, just call onUpdateComponent with a special signal
+            onUpdateComponent(component.id, { props: { ...currentProps, __setAsBackground: true } });
+        } else if (component.type === 'image' && !currentProps.background && currentProps.__wasBackground) {
+            // If unchecking, restore image as child and clear backgroundImage
+            onUpdateComponent(component.id, { props: { ...currentProps, __restoreFromBackground: true } });
+        } else {
+            onUpdateComponent(component.id, { props: currentProps });
+        }
     };
 
     const renderPropField = (key, value) => {
@@ -103,8 +116,62 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }) =
                 {Object.entries(currentProps).map(([key, value]) =>
                     (component.type === 'container' && key === 'flexDirection') ||
                     ['margin','padding'].includes(key) ||
-                    (component.type === 'text' && ['bold','italic','underline'].includes(key))
+                    (component.type === 'text' && ['bold','italic','underline'].includes(key)) ||
+                    (component.type === 'image' && ['position','top','left','right','bottom','background'].includes(key))
                         ? null : renderPropField(key, value)
+                )}
+                {/* Image advanced positioning controls */}
+                {component.type === 'image' && (
+                    <>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>
+                                Position:
+                            </label>
+                            <select
+                                style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px', marginBottom: '3px' }}
+                                value={currentProps.position || 'static'}
+                                onChange={e => handleChange('position', e.target.value, 'string')}
+                            >
+                                <option value="static">static</option>
+                                <option value="relative">relative</option>
+                                <option value="absolute">absolute</option>
+                                <option value="fixed">fixed</option>
+                                <option value="sticky">sticky</option>
+                            </select>
+                        </div>
+                        {['relative', 'absolute', 'fixed', 'sticky'].includes(currentProps.position) && (
+                            <>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>Top:</label>
+                                    <input type="text" style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px' }} value={currentProps.top || ''} onChange={e => handleChange('top', e.target.value, 'string')} />
+                                </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>Left:</label>
+                                    <input type="text" style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px' }} value={currentProps.left || ''} onChange={e => handleChange('left', e.target.value, 'string')} />
+                                </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>Right:</label>
+                                    <input type="text" style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px' }} value={currentProps.right || ''} onChange={e => handleChange('right', e.target.value, 'string')} />
+                                </div>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>Bottom:</label>
+                                    <input type="text" style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px' }} value={currentProps.bottom || ''} onChange={e => handleChange('bottom', e.target.value, 'string')} />
+                                </div>
+                            </>
+                        )}
+                        <div style={{ marginBottom: '10px' }}>
+                            <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>Background:</label>
+                            <input type="checkbox" checked={!!currentProps.background} onChange={e => {
+                                const checked = e.target.checked;
+                                setCurrentProps(prev => ({
+                                    ...prev,
+                                    background: checked,
+                                    __wasBackground: checked ? true : prev.__wasBackground,
+                                }));
+                            }} />
+                            <span style={{ marginLeft: 8 }}>Use image as container background</span>
+                        </div>
+                    </>
                 )}
             </div>
             <button onClick={handleApply} style={{ background: '#28a745', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', width: '100%', marginTop: '15px' }}>

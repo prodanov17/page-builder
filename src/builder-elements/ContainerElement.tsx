@@ -28,6 +28,10 @@ const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
             width: props.width || 'auto',
             height: props.height || 'auto',
             cursor: 'pointer',
+            backgroundImage: props.backgroundImage ? `url('${props.backgroundImage}')` : undefined,
+            backgroundSize: props.backgroundImage ? 'cover' : undefined,
+            backgroundPosition: props.backgroundImage ? 'center' : undefined,
+            backgroundRepeat: props.backgroundImage ? 'no-repeat' : undefined,
         } as const;
 
         const handleEmptyClick = (e: React.MouseEvent<HTMLDivElement>) => {

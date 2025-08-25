@@ -10,6 +10,11 @@ const ImageElement: FC<BaseComponentProps<ImageProps>> = ({ id, props, onSelect,
         objectFit: props.objectFit || 'cover',
         borderRadius: props.borderRadius || '0px',
         cursor: 'pointer',
+        position: props.position || 'static',
+        top: props.top,
+        left: props.left,
+        right: props.right,
+        bottom: props.bottom,
     } as const;
 
     const handleClick = (e: MouseEvent) => {

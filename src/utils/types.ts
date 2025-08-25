@@ -33,6 +33,11 @@ export interface ImageProps extends BaseProps {
   height?: string;
   objectFit?: 'fill' | 'contain' | 'cover' | 'none' | 'scale-down';
   borderRadius?: string;
+  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+  top?: string;
+  left?: string;
+  right?: string;
+  bottom?: string;
 }
 
 export interface ContainerProps extends BaseProps {
@@ -47,6 +52,7 @@ export interface ContainerProps extends BaseProps {
   width?: string;
   height?: string;
   name?: string;
+  backgroundImage?: string;
 }
 
 export interface ChildPlacement {

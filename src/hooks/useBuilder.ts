@@ -94,6 +94,86 @@ const useBuilder = () => {
     (id: string, newPartialComponent: Partial<Component>) => {
       if (!builder) return;
 
+      // Helper to find parent container and its children
+      function findParentAndIndex(components: Component[], childId: string, parent: Component | null = null): { parent: Component | null, index: number, path: number[] } | null {
+        for (let i = 0; i < components.length; i++) {
+          const comp = components[i];
+          if (comp.id === childId) {
+            return { parent, index: i, path: [] };
+          }
+          if (comp.children) {
+            const result = findParentAndIndex(comp.children, childId, comp);
+            if (result) {
+              result.path.unshift(i);
+              return result;
+            }
+          }
+        }
+        return null;
+      }
+
+      // Special logic for image background transfer
+      if (newPartialComponent.props && (newPartialComponent.props as any).__setAsBackground) {
+        // Find parent container
+        const parentInfo = findParentAndIndex(builder.components, id);
+        if (parentInfo && parentInfo.parent && parentInfo.parent.type === 'container') {
+          // Remove image from parent's children and set backgroundImage
+          const parentId = parentInfo.parent.id;
+          const imageSrc = (newPartialComponent.props as any).src;
+          // Remove image from children
+          function removeChildAndSetBackground(components: Component[]): Component[] {
+            return components.map(comp => {
+              if (comp.id === parentId) {
+                return {
+                  ...comp,
+                  props: { ...comp.props, backgroundImage: imageSrc },
+                  children: (comp.children || []).filter(child => child.id !== id),
+                };
+              } else if (comp.children) {
+                return { ...comp, children: removeChildAndSetBackground(comp.children) };
+              }
+              return comp;
+            });
+          }
+          setBuilderInternal(prevBuilder => ({
+            ...prevBuilder!,
+            components: removeChildAndSetBackground(prevBuilder!.components),
+          }));
+          return;
+        }
+      }
+      // Special logic for restoring image from background
+      if (newPartialComponent.props && (newPartialComponent.props as any).__restoreFromBackground) {
+        // Find parent container
+        const parentInfo = findParentAndIndex(builder.components, id);
+        if (parentInfo && parentInfo.parent && parentInfo.parent.type === 'container') {
+          const parentId = parentInfo.parent.id;
+          const imageSrc = (newPartialComponent.props as any).src;
+          // Add image back as child and clear backgroundImage
+          function addChildAndClearBackground(components: Component[]): Component[] {
+            return components.map(comp => {
+              if (comp.id === parentId) {
+                // Only add if not already present
+                const alreadyPresent = (comp.children || []).some(child => child.id === id);
+                return {
+                  ...comp,
+                  props: { ...comp.props, backgroundImage: undefined },
+                  children: alreadyPresent ? comp.children : [...(comp.children || []), { id, type: 'image', props: { ...newPartialComponent.props, background: false, __wasBackground: false } }],
+                };
+              } else if (comp.children) {
+                return { ...comp, children: addChildAndClearBackground(comp.children) };
+              }
+              return comp;
+            });
+          }
+          setBuilderInternal(prevBuilder => ({
+            ...prevBuilder!,
+            components: addChildAndClearBackground(prevBuilder!.components),
+          }));
+          return;
+        }
+      }
+
       const updateRecursive = (
         components: Component[],
         targetId: string,
@@ -103,7 +183,9 @@ const useBuilder = () => {
           if (comp.id === targetId) {
             // Merge props carefully if only props are updated
             if (updates.props && !updates.type && !updates.children) {
-              return { ...comp, props: { ...comp.props, ...updates.props } };
+              // Remove special keys
+              const { __setAsBackground, __restoreFromBackground, ...restProps } = updates.props as any;
+              return { ...comp, props: { ...comp.props, ...restProps } };
             }
             return { ...comp, ...updates };
           }

@@ -98,10 +98,7 @@ function App() {
     }, []);
 
 
-    const selectedComponent = builder?.components.find(comp => findComponentRecursive(comp, selectedComponentId)) ||
-        builder?.components.reduce((found, comp) => found || findComponentRecursive(comp, selectedComponentId), null);
-
-
+    // Find the selected component recursively in the builder tree
     function findComponentRecursive(component: any, id: string | null): any | null {
         if (!id) return null;
         if (component.id === id) {
@@ -117,6 +114,11 @@ function App() {
         }
         return null;
     }
+
+    // Use a single recursive search over all root components
+    const selectedComponent = builder?.components
+        .map(comp => findComponentRecursive(comp, selectedComponentId))
+        .find(Boolean) || null;
 
 
     if (!builder) {
