@@ -26,9 +26,20 @@ const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedC
     };
 
     return (
-        <div className="canvas" style={globalStyles}>
+        <div className="canvas" style={{ ...globalStyles, borderRadius: 12, background: '#fff' }}>
             {components.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#888', padding: '50px 20px', border: '1px dashed #ccc', margin: '20px' }}>
+                <div
+                    style={{
+                        textAlign: 'center',
+                        color: '#6b7280',
+                        padding: '60px 24px',
+                        border: '1px dashed rgba(0,0,0,0.08)',
+                        margin: '16px',
+                        borderRadius: 12,
+                        background: 'linear-gradient(180deg, #ffffff, #fafbff)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 4px 10px rgba(0,0,0,0.05)',
+                    }}
+                >
                     The canvas is empty. Add components from the palette.
                 </div>
             )}

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import EditorLayout from './components/EditorLayout';
 import CanvasRenderer from './renderer/CanvasRenderer';
 import PropertiesEditor from './components/PropertiesEditor';
+import ComponentsList from './components/ComponentsList';
 import useBuilder, { type Builder } from './hooks/useBuilder';
 import ComponentPalette from './components/CommandPallette';
 
@@ -128,9 +129,8 @@ function App() {
     return (
         <div className="app-container">
             <EditorLayout
-                palette={
-                    <ComponentPalette onAddComponent={handleAddComponent} />
-                }
+                topbar={<ComponentPalette onAddComponent={handleAddComponent} />}
+                sidebar={<ComponentsList components={builder.components} selectedId={selectedComponentId} onSelect={handleSelectComponent} onRemove={removeBuilderComponent} />}
                 canvas={
                     <CanvasRenderer
                         components={builder.components}
@@ -138,13 +138,13 @@ function App() {
                         onSelectComponent={handleSelectComponent}
                         selectedComponentId={selectedComponentId}
                         onAddComponentRequestToContainer={handleAddComponentRequestToContainer}
-                        updateChildPlacement={updateChildPlacement} // <-- pass down
+                        updateChildPlacement={updateChildPlacement}
                     />
                 }
                 properties={
                     selectedComponent ? (
                         <PropertiesEditor
-                            key={selectedComponent.id} // Re-mounts editor on selection change
+                            key={selectedComponent.id}
                             component={selectedComponent}
                             onUpdateComponent={updateBuilderComponent}
                             onRemoveComponent={removeBuilderComponent}

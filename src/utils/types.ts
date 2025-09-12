@@ -55,6 +55,20 @@ export interface ContainerProps extends BaseProps {
   backgroundImage?: string;
 }
 
+export interface InputProps extends BaseProps {
+  kind?: 'text' | 'checkbox' | 'radio';
+  placeholder?: string;
+  label?: string;
+  width?: string;
+  height?: string;
+}
+
+export interface IconProps extends BaseProps {
+  name?: string; // lucide icon name
+  size?: number;
+  color?: string;
+}
+
 export interface ChildPlacement {
   order?: number;
   alignSelf?: 'auto' | 'flex-start' | 'flex-end' | 'center' | 'baseline' | 'stretch';
@@ -74,11 +88,11 @@ export interface ContainerComponentProps extends BaseComponentProps<ContainerPro
   updateChildPlacement?: (childId: string, placement: Partial<ChildPlacement>) => void;
 }
 
-export type ComponentProps = ButtonProps | TextProps | ImageProps | ContainerProps;
+export type ComponentProps = ButtonProps | TextProps | ImageProps | ContainerProps | InputProps | IconProps;
 
 export interface BuilderComponent {
   id: string;
-  type: 'button' | 'text' | 'image' | 'container';
+  type: 'button' | 'text' | 'image' | 'container' | 'input' | 'icon';
   props: ComponentProps;
   children?: BuilderComponent[];
   placement?: ChildPlacement;

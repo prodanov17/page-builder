@@ -5,8 +5,8 @@ const TextElement: FC<BaseComponentProps<TextProps>> = ({ id, props, onSelect, i
     const style = {
         fontSize: props.fontSize || '16px',
         color: props.color || '#333333',
-        padding: props.padding || '5px',
-        margin: props.margin || '5px',
+        padding: props.padding ?? '0',
+        margin: props.margin ?? '0',
         border: `2px solid ${isSelected ? 'red' : 'transparent'}`,
         textAlign: props.textAlign || 'left',
         fontWeight: props.bold ? 'bold' : (props.fontWeight || 'normal'),
@@ -16,6 +16,8 @@ const TextElement: FC<BaseComponentProps<TextProps>> = ({ id, props, onSelect, i
         letterSpacing: props.letterSpacing || undefined,
         textTransform: props.textTransform || undefined,
         cursor: 'pointer',
+        width: props.width || undefined,
+        height: props.height || undefined,
     } as const;
 
     const handleClick = (e: MouseEvent) => {

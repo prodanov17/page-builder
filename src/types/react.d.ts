@@ -4,6 +4,10 @@ declare module 'react' {
     export type MouseEvent<T = Element> = {
         stopPropagation: () => void;
     };
+    export function useState<S = any>(initial?: S): [S, (value: S | ((prev: S) => S)) => void];
+    export function useEffect(effect: (...args: any[]) => any, deps?: any[]): void;
+    export function useCallback<F extends (...args: any[]) => any>(fn: F, deps?: any[]): F;
+    export function useRef<T = any>(initial?: T | null): { current: T | null };
     export type ForwardedRef<T> = ((instance: T | null) => void) | {
         current: T | null;
     } | null;

@@ -4,6 +4,8 @@ import TextElement from "./TextElement";
 import ImageElement from "./ImageElement";
 import ContainerElement from "./ContainerElement";
 import type { BaseComponentProps, BuilderComponent } from "@/utils/types";
+import InputElement from "./InputElement";
+import IconElement from "./IconElement";
 
 type ComponentMapType = {
   [K in BuilderComponent["type"]]: ComponentType<BaseComponentProps<any>>;
@@ -14,6 +16,8 @@ export const componentMap: ComponentMapType = {
   text: TextElement,
   image: ImageElement,
   container: ContainerElement,
+  input: InputElement as any,
+  icon: IconElement as any,
 };
 
 type PropField = {

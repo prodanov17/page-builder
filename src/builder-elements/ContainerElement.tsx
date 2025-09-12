@@ -15,18 +15,18 @@ const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
     ({ id, props, children = [], onSelect, isSelected, selectedComponentId, onAddComponentRequest, updateChildPlacement }, ref) => {
         const isRow = props.flexDirection === 'row' || props.flexDirection === 'row-reverse';
         const style = {
-            padding: props.padding || '10px',
+            padding: props.padding ?? '0',
             backgroundColor: props.backgroundColor || 'rgba(0,0,0,0.03)',
             border: `2px dashed ${isSelected ? 'dodgerblue' : (props.borderColor || '#cccccc')}`,
-            margin: props.margin || '5px',
+            margin: props.margin ?? '0',
             minHeight: props.minHeight || '50px',
             display: props.display || 'flex',
             flexDirection: props.flexDirection || 'column',
             alignItems: props.alignItems || 'stretch',
             justifyContent: props.justifyContent || 'flex-start',
             gap: props.gap || '5px',
-            width: props.width || 'auto',
-            height: props.height || 'auto',
+            width: props.width ?? 'auto',
+            height: props.height ?? 'auto',
             cursor: 'pointer',
             backgroundImage: props.backgroundImage ? `url('${props.backgroundImage}')` : undefined,
             backgroundSize: props.backgroundImage ? 'cover' : undefined,
