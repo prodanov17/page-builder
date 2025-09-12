@@ -127,3 +127,20 @@ export const componentEditorSchema: Record<ComponentType, GroupDefinition[]> = {
         sizingGroup
     ]
 };
+
+export const pageEditorSchema: GroupDefinition[] = [
+    {
+        title: 'Page Settings',
+        controls: [
+            { prop: 'name', label: 'Page Name', control: 'text' },
+        ]
+    },
+    {
+        title: 'Canvas Styles',
+        controls: [
+            { prop: 'backgroundColor', label: 'Background Color', control: 'color' },
+            { prop: 'color', label: 'Default Text Color', control: 'color' },
+            { prop: 'fontFamily', label: 'Font Family', control: 'text' },
+        ]
+    }
+];

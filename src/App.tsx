@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from 'react';
 import EditorLayout from './components/EditorLayout';
 import CanvasRenderer from './renderer/CanvasRenderer';
 import PropertiesEditor from './components/PropertiesEditor';
-import ComponentsList from './components/ComponentsList';
 import useBuilder from './hooks/useBuilder';
 import ComponentPalette from './components/CommandPallette';
 import type { Builder, Component, ComponentType } from './types/builder';
@@ -29,6 +28,7 @@ function App() {
         removeComponent: removeBuilderComponent,
         updateComponent: updateBuilderComponent,
         updateChildPlacement, // <-- add this
+        setStyles,
     } = useBuilder();
 
     const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
@@ -162,10 +162,17 @@ function App() {
         .map(comp => findComponentRecursive(comp, selectedComponentId))
         .find(Boolean) || null;
 
+    // NEW handler to pass to the properties editor for global styles
+    const handleUpdatePageStyles = useCallback((newStyles: React.CSSProperties) => {
+        setStyles(newStyles as { [key: string]: string });
+    }, [setStyles]);
+
 
     if (!builder) {
         return <div>Loading Builder...</div>;
     }
+
+    console.log("Selected Component:", selectedComponent);
 
     return (
         <div className="app-container">
@@ -189,18 +196,14 @@ function App() {
                     />
                 }
                 properties={
-                    selectedComponent ? (
-                        <PropertiesEditor
-                            key={selectedComponent.id}
-                            component={selectedComponent}
-                            onUpdateComponent={updateBuilderComponent}
-                            onRemoveComponent={removeBuilderComponent}
-                        />
-                    ) : (
-                        <div style={{ padding: '15px', textAlign: 'center', color: '#777' }}>
-                            Select an element on the canvas to edit its properties.
-                        </div>
-                    )
+                    <PropertiesEditor
+                        key={selectedComponent?.id || "page-properties"}
+                        component={selectedComponent}
+                        onUpdateComponent={updateBuilderComponent}
+                        onRemoveComponent={removeBuilderComponent}
+                        pageStyles={builder.styles}
+                        onUpdatePageStyles={handleUpdatePageStyles}
+                    />
                 }
             />
             {/* For Debugging */}

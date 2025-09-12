@@ -1,13 +1,28 @@
 import type { Component } from '@/types/builder';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ChevronDown, Trash2, Square, ArrowLeftRight, PanelTopDashed, Settings } from 'lucide-react';
-import { componentEditorSchema, type ControlDefinition } from '@/utils/editor-schema';
+import { ChevronDown, Trash2, Square, ArrowLeftRight, PanelTopDashed, Settings, Share, FileOutput, FileInput } from 'lucide-react';
+import { componentEditorSchema, pageEditorSchema, type ControlDefinition } from '@/utils/editor-schema';
 
 type PropertiesEditorProps = {
+    // The component prop is now optional
+    component?: Component | null;
+    onUpdateComponent: (id: string, update: Partial<Component>) => void;
+    onRemoveComponent: (id: string) => void;
+    pageStyles: React.CSSProperties;
+    onUpdatePageStyles: (newStyles: React.CSSProperties) => void;
+};
+
+type ComponentEditorViewProps = {
     component: Component;
     onUpdateComponent: (id: string, update: Partial<Component>) => void;
     onRemoveComponent: (id: string) => void;
 };
+
+type PageEditorViewProps = {
+    pageStyles: React.CSSProperties;
+    onUpdatePageStyles: (newStyles: React.CSSProperties) => void;
+};
+
 
 // --- Sub-components for UI elements ---
 
@@ -15,7 +30,11 @@ const PropertyGroup: React.FC<{ title: string; children: React.ReactNode }> = ({
     const [isOpen, setIsOpen] = useState(true);
     return (
         <div className="border border-slate-200 rounded-lg">
-            <button className="flex justify-between items-center w-full p-2 bg-slate-50 font-semibold text-sm rounded-t-lg" onClick={() => setIsOpen(!isOpen)}>
+            <button
+                className="flex justify-between items-center w-full p-2 bg-slate-50 font-semibold text-sm rounded-t-lg"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+            >
                 <span>{title}</span>
                 <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
             </button>
@@ -38,7 +57,15 @@ const BoxControl: React.FC<{ label: string, value: string, onChange: (value: str
     const [mode, setMode] = useState<'overall' | 'axis' | 'individual'>('overall');
 
     const parseBoxShorthand = (v: string | undefined): [string, string, string, string] => {
-        const parts = (v || '0').trim().split(/\s+/).map(p => String(parseFloat(p) || 0));
+        // Accept values like "10px 5px", "10 5 3", "0", etc.
+        const trimmed = (v ?? '').trim();
+        if (trimmed === '') return ['0', '0', '0', '0'];
+        const partsRaw = trimmed.split(/\s+/);
+        const parts = partsRaw.map(p => {
+            // strip trailing "px" if present and parse number
+            const num = parseFloat(p.replace(/px$/i, ''));
+            return Number.isFinite(num) ? String(num) : '0';
+        });
         if (parts.length === 1) return [parts[0], parts[0], parts[0], parts[0]];
         if (parts.length === 2) return [parts[0], parts[1], parts[0], parts[1]];
         if (parts.length === 3) return [parts[0], parts[1], parts[2], parts[1]];
@@ -46,7 +73,11 @@ const BoxControl: React.FC<{ label: string, value: string, onChange: (value: str
     };
 
     const joinBoxShorthand = (t: string, r: string, b: string, l: string): string => {
-        const format = (val: string) => (parseFloat(val) === 0 ? '0' : `${parseFloat(val) || 0}px`);
+        const format = (val: string) => {
+            const n = parseFloat(String(val));
+            if (!Number.isFinite(n) || n === 0) return '0';
+            return `${n}px`;
+        };
         return `${format(t)} ${format(r)} ${format(b)} ${format(l)}`;
     };
 
@@ -54,26 +85,31 @@ const BoxControl: React.FC<{ label: string, value: string, onChange: (value: str
 
     const renderInputs = () => {
         switch (mode) {
-            case 'overall': return <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, e.target.value, e.target.value, e.target.value))} placeholder="all" />;
-            case 'axis': return (
-                <div className="flex gap-2">
-                    <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, r, e.target.value, l))} placeholder="top/bottom" />
-                    <input type="number" className={baseInputStyles} value={l} onChange={e => onChange(joinBoxShorthand(t, e.target.value, b, e.target.value))} placeholder="left/right" />
-                </div>
-            );
-            case 'individual': return (
-                <div className="grid grid-cols-4 gap-2">
-                    <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, r, b, l))} placeholder="T" />
-                    <input type="number" className={baseInputStyles} value={r} onChange={e => onChange(joinBoxShorthand(t, e.target.value, b, l))} placeholder="R" />
-                    <input type="number" className={baseInputStyles} value={b} onChange={e => onChange(joinBoxShorthand(t, r, e.target.value, l))} placeholder="B" />
-                    <input type="number" className={baseInputStyles} value={l} onChange={e => onChange(joinBoxShorthand(t, r, b, e.target.value))} placeholder="L" />
-                </div>
-            );
+            case 'overall':
+                return <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, e.target.value, e.target.value, e.target.value))} placeholder="all" />;
+            case 'axis':
+                return (
+                    <div className="flex gap-2">
+                        <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, r, e.target.value, l))} placeholder="top/bottom" />
+                        <input type="number" className={baseInputStyles} value={l} onChange={e => onChange(joinBoxShorthand(t, e.target.value, b, e.target.value))} placeholder="left/right" />
+                    </div>
+                );
+            case 'individual':
+                return (
+                    <div className="grid grid-cols-4 gap-2">
+                        <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, r, b, l))} placeholder="T" />
+                        <input type="number" className={baseInputStyles} value={r} onChange={e => onChange(joinBoxShorthand(t, e.target.value, b, l))} placeholder="R" />
+                        <input type="number" className={baseInputStyles} value={b} onChange={e => onChange(joinBoxShorthand(t, r, e.target.value, l))} placeholder="B" />
+                        <input type="number" className={baseInputStyles} value={l} onChange={e => onChange(joinBoxShorthand(t, r, b, e.target.value))} placeholder="L" />
+                    </div>
+                );
         }
     };
 
     const ModeButton: React.FC<{ targetMode: 'overall' | 'axis' | 'individual'; children: React.ReactNode }> = ({ targetMode, children }) => (
-        <button onClick={() => setMode(targetMode)} className={`p-1.5 rounded-md ${mode === targetMode ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 hover:bg-slate-200'}`}>{children}</button>
+        <button onClick={() => setMode(targetMode)} className={`p-1.5 rounded-md ${mode === targetMode ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 hover:bg-slate-200'}`} title={targetMode}>
+            {children}
+        </button>
     );
 
     return (
@@ -91,60 +127,42 @@ const BoxControl: React.FC<{ label: string, value: string, onChange: (value: str
     );
 };
 
-// --- Main Editor Component ---
 
-const PropertiesEditor: React.FC<PropertiesEditorProps> = ({ component, onUpdateComponent, onRemoveComponent }) => {
-    const [currentProps, setCurrentProps] = useState(component.props);
+// --- View 1: Editing a Selected Component ---
 
-    useEffect(() => { setCurrentProps(component.props); }, [component]);
+const ComponentEditorView: React.FC<ComponentEditorViewProps> = ({ component, onUpdateComponent, onRemoveComponent }) => {
+    const [currentProps, setCurrentProps] = useState<Record<string, any>>(component.props ?? {});
 
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                onUpdateComponent(component.id, { props: currentProps });
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => { window.removeEventListener('keydown', handleKeyDown); };
-    }, [component.id, currentProps, onUpdateComponent]);
+        setCurrentProps(component.props ?? {});
+    }, [component]);
 
     const handlePropChange = useCallback((propName: string, value: any) => {
         setCurrentProps(prev => ({ ...prev, [propName]: value }));
     }, []);
 
-    const handleApply = () => { onUpdateComponent(component.id, { props: currentProps }); };
+    useEffect(() => {
+        if (JSON.stringify(component.props) === JSON.stringify(currentProps)) {
+            return;
+        }
+        const handler = setTimeout(() => {
+            onUpdateComponent(component.id, { props: currentProps });
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [component.id, component.props, currentProps, onUpdateComponent]);
+
 
     const renderControl = (control: ControlDefinition) => {
         const { prop, label, control: controlType, options = [] } = control;
         const value = currentProps[prop] ?? '';
 
         switch (controlType) {
-            case 'text':
-                return <ControlWrapper label={label}><input type="text" className={baseInputStyles} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
-            case 'number':
-                return <ControlWrapper label={label}><input type={controlType} className={baseInputStyles} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
-
-            case 'color':
-                return <ControlWrapper label={label}><input type="color" className={`${baseInputStyles} p-1 h-10`} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
-
-            case 'select':
-                return <ControlWrapper label={label}><select className={baseInputStyles} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)}>{options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></ControlWrapper>;
-
-            case 'button-group':
-                return (
-                    <ControlWrapper label={label}>
-                        <div className="flex items-center gap-1">
-                            {options.map(opt => (
-                                <button key={opt.value} onClick={() => handlePropChange(prop, value === opt.value ? '' : opt.value)} className={`p-2 rounded-md transition ${value === opt.value ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}>{opt.icon || opt.label}</button>
-                            ))}
-                        </div>
-                    </ControlWrapper>
-                );
-
-            case 'box':
-                return <BoxControl label={label} value={value.toString()} onChange={(newValue) => handlePropChange(prop, newValue)} />;
-
+            case 'text': return <ControlWrapper key={prop} label={label}><input type="text" className={baseInputStyles} value={String(value)} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
+            case 'number': return <ControlWrapper key={prop} label={label}><input type="number" className={baseInputStyles} value={String(value)} onChange={e => handlePropChange(prop, parseFloat(e.target.value) || 0)} /></ControlWrapper>;
+            case 'color': return <ControlWrapper key={prop} label={label}><input type="color" className={`${baseInputStyles} p-1 h-10`} value={String(value)} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
+            case 'select': return <ControlWrapper key={prop} label={label}><select className={baseInputStyles} value={String(value)} onChange={e => handlePropChange(prop, e.target.value)}>{options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></ControlWrapper>;
+            case 'button-group': return <ControlWrapper key={prop} label={label}><div className="flex items-center gap-1">{options.map(opt => <button key={opt.value} onClick={() => handlePropChange(prop, value === opt.value ? '' : opt.value)} className={`p-2 rounded-md transition ${value === opt.value ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`} title={opt.label}>{opt.icon ?? opt.label}</button>)}</div></ControlWrapper>;
+            case 'box': return <div key={prop}><BoxControl label={label} value={String(value)} onChange={(newValue) => handlePropChange(prop, newValue)} /></div>;
             default: return null;
         }
     };
@@ -157,31 +175,121 @@ const PropertiesEditor: React.FC<PropertiesEditorProps> = ({ component, onUpdate
                 <h4 className="m-0 text-base font-semibold inline-block capitalize">{component.type}</h4>
                 <span className="text-xs text-slate-400 ml-2">({component.id.slice(-5)})</span>
             </div>
-
-            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbars">
                 {!schema || schema.length === 0 ? (
-                    <div className="text-center text-slate-400 p-10 flex flex-col items-center gap-3">
-                        <Settings size={24} />
-                        <span>No properties defined for this component.</span>
-                    </div>
+                    <div className="text-center text-slate-400 p-10 flex flex-col items-center gap-3"><Settings size={24} /><span>No properties for this component.</span></div>
                 ) : (
-                    schema.map(group => (
-                        <PropertyGroup key={group.title} title={group.title}>
-                            {group.controls.map(renderControl)}
-                        </PropertyGroup>
-                    ))
+                    schema.map(group => <PropertyGroup key={group.title} title={group.title}>{group.controls.map(renderControl)}</PropertyGroup>)
                 )}
             </div>
-
-            <div className="p-3 border-t border-slate-200 flex gap-2">
-                <button className="flex-1 p-2 rounded-md font-semibold cursor-pointer transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1.5" onClick={() => onRemoveComponent(component.id)}>
-                    <Trash2 size={14} /> Remove
-                </button>
-                <button className="flex-1 p-2 rounded-md font-semibold cursor-pointer transition bg-blue-600 text-white hover:bg-blue-700" onClick={handleApply}>
-                    Apply
-                </button>
+            <div className="p-3 border-t border-slate-200">
+                <button className="w-full p-2 rounded-md font-semibold cursor-pointer transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1.5" onClick={() => onRemoveComponent(component.id)}><Trash2 size={14} /> Remove</button>
             </div>
         </div>
+    );
+};
+
+
+// --- View 2: Editing Page Styles ---
+
+const PageEditorView: React.FC<PageEditorViewProps> = ({ pageStyles, onUpdatePageStyles }) => {
+    const [currentStyles, setCurrentStyles] = useState(pageStyles);
+
+    useEffect(() => {
+        setCurrentStyles(pageStyles);
+    }, [pageStyles]);
+
+    const handleStyleChange = useCallback((styleName: string, value: any) => {
+        setCurrentStyles(prev => ({ ...prev, [styleName]: value }));
+    }, []);
+
+    useEffect(() => {
+        if (JSON.stringify(pageStyles) === JSON.stringify(currentStyles)) {
+            return;
+        }
+        const handler = setTimeout(() => {
+            onUpdatePageStyles(currentStyles);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [currentStyles, pageStyles, onUpdatePageStyles]);
+
+    const renderControl = (control: ControlDefinition) => {
+        const { prop, label, control: controlType } = control;
+        const value = currentStyles[prop as keyof React.CSSProperties] ?? '';
+
+        switch (controlType) {
+            case 'text': return <ControlWrapper key={prop} label={label}><input type="text" className={baseInputStyles} value={String(value)} onChange={e => handleStyleChange(prop, e.target.value)} /></ControlWrapper>;
+            case 'color': return <ControlWrapper key={prop} label={label}><input type="color" className={`${baseInputStyles} p-1 h-10`} value={String(value)} onChange={e => handleStyleChange(prop, e.target.value)} /></ControlWrapper>;
+            default: return null;
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-full font-sans">
+            <div className="p-3 border-b border-slate-200">
+                <h4 className="m-0 text-base font-semibold">Page Settings</h4>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbars">
+                {pageEditorSchema.map(group => (
+                    <PropertyGroup key={group.title} title={group.title}>{group.controls.map(renderControl)}</PropertyGroup>
+                ))}
+            </div>
+            <div className="p-4 border-t border-slate-200 bg-slate-50">
+                <div className="grid gap-2">
+                    <button
+                        className="w-full p-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 
+                 bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                        onClick={() => { }}
+                    >
+                        <Share size={16} />
+                        Publish site
+                    </button>
+
+                    <button
+                        className="w-full p-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 
+                 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        onClick={() => { }}
+                    >
+                        <FileInput size={16} />
+                        Import
+                    </button>
+
+                    <button
+                        className="w-full p-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 
+                 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        onClick={() => { }}
+                    >
+                        <FileOutput size={16} />
+                        Export
+                    </button>
+                </div>
+            </div>
+
+
+        </div>
+    );
+};
+
+
+// --- Main Router Component ---
+
+const PropertiesEditor: React.FC<PropertiesEditorProps> = ({ component, onUpdateComponent, onRemoveComponent, pageStyles, onUpdatePageStyles }) => {
+    if (component) {
+        return (
+            <ComponentEditorView
+                key={component.id}
+                component={component}
+                onUpdateComponent={onUpdateComponent}
+                onRemoveComponent={onRemoveComponent}
+            />
+        );
+    }
+
+    return (
+        <PageEditorView
+            pageStyles={pageStyles}
+            onUpdatePageStyles={onUpdatePageStyles}
+        />
     );
 };
 

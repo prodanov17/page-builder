@@ -29,7 +29,7 @@ export const prebuiltComponents: PrebuiltComponent[] = [
         {
           type: "text",
           props: {
-            text: "Welcome to Our Website",
+            content: "Welcome to Our Website",
             fontSize: "48px",
             fontWeight: "bold",
             color: "#ffffff",
@@ -39,7 +39,7 @@ export const prebuiltComponents: PrebuiltComponent[] = [
         {
           type: "text",
           props: {
-            text: "Discover amazing things here. Your journey starts now.",
+            content: "Discover amazing things here. Your journey starts now.",
             fontSize: "18px",
             color: "#f0f0f0",
             textAlign: "center",
@@ -49,7 +49,7 @@ export const prebuiltComponents: PrebuiltComponent[] = [
         {
           type: "button",
           props: {
-            text: "Get Started",
+            content: "Get Started",
             backgroundColor: "#2563eb",
             color: "#ffffff",
             padding: "12px 24px",
@@ -65,7 +65,7 @@ export const prebuiltComponents: PrebuiltComponent[] = [
     component: {
       type: "button",
       props: {
-        text: "Learn More",
+        content: "Learn More",
         backgroundColor: "#f97316",
         color: "white",
         padding: "10px 20px",

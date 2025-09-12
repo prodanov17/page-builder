@@ -47,7 +47,7 @@ const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedC
                         border: '1px dashed rgba(0,0,0,0.08)',
                         margin: '16px',
                         borderRadius: 12,
-                        background: 'linear-gradient(180deg, #ffffff, #cececec)',
+                        background: '#f9fafb',
                         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 4px 10px rgba(0,0,0,0.05)',
                     }}
                 >
