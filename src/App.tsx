@@ -7,6 +7,7 @@ import ComponentsList from './components/ComponentsList';
 import useBuilder, { type Component, type Builder } from './hooks/useBuilder';
 import ComponentPalette from './components/CommandPallette';
 import type { ComponentType } from './types/builder';
+import { Copy } from 'lucide-react';
 
 // Simple ID generator
 const generateId = () => `el-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 5)}`;
@@ -23,7 +24,29 @@ function App() {
 
     const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
     const [targetParentIdForNewComponent, setTargetParentIdForNewComponent] = useState<string | null>(null);
+    const [showDebugInfo, setShowDebugInfo] = useState(false);
+    const [copySuccess, setCopySuccess] = useState(false);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!document.activeElement) return;
+            if (document.activeElement.tagName.toLowerCase() === 'input') return;
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedComponentId) {
+                    removeBuilderComponent(selectedComponentId);
+                    setSelectedComponentId(null);
+                }
+            } else if (e.key.toLowerCase() === 'd' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                setShowDebugInfo(prev => !prev);
+            }
+
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedComponentId, removeBuilderComponent]);
 
     // Initialize the builder state on mount
     useEffect(() => {
@@ -157,12 +180,17 @@ function App() {
                 }
             />
             {/* For Debugging */}
-            {/* <pre style={{position: 'fixed', bottom: 0, left:0, width: '100%', maxHeight: '150px', overflow:'auto', background:'rgba(0,0,0,0.7)', color: 'white', zIndex:1000, fontSize:'10px', padding:'5px' }}>
-         Selected ID: {selectedComponentId} <br/>
-         Target Parent ID: {targetParentIdForNewComponent} <br/>
-         Builder State: {JSON.stringify(builder, null, 2)}
-       </pre> */}
-        </div>
+            {showDebugInfo && <pre className="flex flex-col" style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', maxHeight: '150px', overflow: 'auto', background: 'rgba(0,0,0,0.7)', color: 'white', zIndex: 1000, fontSize: '10px', padding: '5px' }}>
+                <button className="flex items-center gap-1 w-full cursor-pointer" onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(builder, null, 2));
+                    setCopySuccess(true);
+                    setTimeout(() => setCopySuccess(false), 2000);
+                }}><Copy size={12} />{!copySuccess ? "Copy state" : "Copied!"}</button><br />
+                Selected ID: {selectedComponentId} <br />
+                Target Parent ID: {targetParentIdForNewComponent} <br />
+                Builder State: {JSON.stringify(builder, null, 2)}
+            </pre>}
+        </div >
     );
 }
 
