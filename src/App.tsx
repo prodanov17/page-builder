@@ -4,13 +4,22 @@ import EditorLayout from './components/EditorLayout';
 import CanvasRenderer from './renderer/CanvasRenderer';
 import PropertiesEditor from './components/PropertiesEditor';
 import ComponentsList from './components/ComponentsList';
-import useBuilder, { type Component, type Builder } from './hooks/useBuilder';
+import useBuilder from './hooks/useBuilder';
 import ComponentPalette from './components/CommandPallette';
-import type { ComponentType } from './types/builder';
+import type { Builder, Component, ComponentType } from './types/builder';
 import { Copy } from 'lucide-react';
+import Sidebar from './components/Sidebar';
 
 // Simple ID generator
 const generateId = () => `el-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 5)}`;
+
+const regenerateIds = (component: Omit<Component, 'id'>): Component => {
+    const newComponent: Component = { ...component, id: generateId() };
+    if (newComponent.children) {
+        newComponent.children = newComponent.children.map(child => regenerateIds(child));
+    }
+    return newComponent;
+};
 
 function App() {
     const {
@@ -40,6 +49,9 @@ function App() {
             } else if (e.key.toLowerCase() === 'd' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 setShowDebugInfo(prev => !prev);
+            } else if (e.key === "Escape") {
+                setSelectedComponentId(null);
+                setTargetParentIdForNewComponent(null);
             }
 
         };
@@ -139,6 +151,12 @@ function App() {
         return null;
     }
 
+    const handleAddPrebuiltComponent = useCallback((prebuilt: Omit<Component, 'id'>) => {
+        const newComponentWithUniqueIds = regenerateIds(prebuilt);
+        // Implement parent targeting logic here if needed
+        addBuilderComponent(newComponentWithUniqueIds);
+    }, [addBuilderComponent]);
+
     // Use a single recursive search over all root components
     const selectedComponent = builder?.components
         .map(comp => findComponentRecursive(comp, selectedComponentId))
@@ -153,7 +171,13 @@ function App() {
         <div className="app-container">
             <EditorLayout
                 topbar={<ComponentPalette onAddComponent={handleAddComponent} />}
-                sidebar={<ComponentsList components={builder.components} selectedId={selectedComponentId} onSelect={handleSelectComponent} onRemove={removeBuilderComponent} />}
+                sidebar={<Sidebar
+                    components={builder.components}
+                    selectedId={selectedComponentId}
+                    onSelect={handleSelectComponent}
+                    onRemove={removeBuilderComponent}
+                    onAddPrebuilt={handleAddPrebuiltComponent}
+                />}
                 canvas={
                     <CanvasRenderer
                         components={builder.components}

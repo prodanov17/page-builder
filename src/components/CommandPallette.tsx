@@ -1,57 +1,67 @@
-import { Square, Image as ImageIcon, Type, Box, FormInput } from 'lucide-react';
-import { availableComponentsList } from '@/utils/components';
-import type { ComponentDefinition, ComponentType, PropsType } from '@/types/builder';
+import React from 'react';
+import type { Component, ComponentType, PropsType } from '@/types/builder';
+import { paletteItems } from '@/utils/palette';
 
-interface PaletteProps { onAddComponent: (type: ComponentType, defaultProps?: PropsType, children?: ComponentDefinition[]) => void };
+interface PaletteProps {
+    onAddComponent: (type: ComponentType, defaultProps?: PropsType, children?: Component[]) => void;
+}
 
-const ComponentPalette = ({ onAddComponent }: PaletteProps) => {
-    const colors = ['#2563eb', '#7c3aed', '#0ea5e9', '#16a34a', '#f97316'];
-    const iconFor = (type: string) => {
-        switch (type) {
-            case 'text':
-                return <Type size={18} />;
-            case 'button':
-                return <Square size={18} />;
-            case 'image':
-                return <ImageIcon size={18} />;
-            case 'container':
-                return <Box size={18} />;
-            case 'input':
-                return <FormInput size={18} />;
-            case 'icon':
-                return <Square size={18} />;
-            default:
-                return <Square size={18} />;
-        }
-    };
-
+const ComponentPalette: React.FC<PaletteProps> = ({ onAddComponent }) => {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflowX: 'auto', justifyContent: 'center' }} className="hide-scrollbars">
-            {availableComponentsList.map((compInfo, idx) => (
+        <div
+            className="hide-scrollbars"
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                overflowX: 'auto',
+                padding: '4px',
+            }}
+        >
+            {paletteItems.map((item) => (
                 <button
-                    key={compInfo.type + idx}
-                    onClick={() => onAddComponent(compInfo.type as ComponentType, compInfo.defaultProps, compInfo.children)}
+                    key={item.label}
+                    onClick={() => onAddComponent(item.type, item.defaultProps)}
+                    className="compact-palette-item-btn"
+                    title={`Add ${item.label}`}
                     style={{
-                        width: 38,
-                        height: 38,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        background: colors[idx % colors.length],
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 12,
-                        boxShadow: '0 6px 14px rgba(0,0,0,0.12)',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: '#ffffff',
+                        color: '#475569',
                         cursor: 'pointer',
-                        fontWeight: 600,
-                        letterSpacing: 0.2,
+                        flexShrink: 0, // Prevent buttons from shrinking
+                        transition: 'all 0.2s ease-in-out',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                     }}
-                    title={compInfo.label}
                 >
-                    {iconFor(compInfo.type)}
+                    {React.cloneElement(item.icon)}
+                    <span style={{ fontSize: '13px', fontWeight: 500, lineHeight: 1 }}>
+                        {item.label}
+                    </span>
                 </button>
             ))}
+
+            <style>{`
+        .compact-palette-item-btn:hover {
+          border-color: #94a3b8;
+          background-color: #f8fafc;
+          color: #1e293b;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+        }
+        .compact-palette-item-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+      `}</style>
         </div>
     );
 };
+
 export default ComponentPalette;

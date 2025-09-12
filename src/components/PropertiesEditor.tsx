@@ -1,330 +1,188 @@
 import type { Component } from '@/types/builder';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ChevronDown, Trash2, Square, ArrowLeftRight, PanelTopDashed, Settings } from 'lucide-react';
+import { componentEditorSchema, type ControlDefinition } from '@/utils/editor-schema';
 
 type PropertiesEditorProps = {
     component: Component;
-    onUpdateComponent: (id: string, update: object) => void;
+    onUpdateComponent: (id: string, update: Partial<Component>) => void;
     onRemoveComponent: (id: string) => void;
 };
 
-const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: PropertiesEditorProps) => {
-    const [currentProps, setCurrentProps] = React.useState(component.props);
-    // const [componentType, setComponentType] = useState(component.type); // If you allow type changes
+// --- Sub-components for UI elements ---
 
-    React.useEffect(() => {
-        setCurrentProps(component.props);
-        // setComponentType(component.type);
-    }, [component]); // Re-initialize when component selection changes
-
-    const handleChange = React.useCallback((propName: string, value: string, type: 'number' | 'boolean' | 'string') => {
-        setCurrentProps(prev => ({
-            ...prev,
-            [propName]: type === 'number' ? parseFloat(value) || 0 : (type === 'boolean' ? value : value),
-        }));
-    }, []);
-
-    // Helper to find parent container and update its backgroundImage
-    const handleApply = () => {
-        // If this is an image and background is checked, move src to parent container backgroundImage
-        if (component.type === 'image' && currentProps.background) {
-            // Find parent container in builder tree
-            // We'll assume the parentId is passed as component.parentId (if available), otherwise, this logic would need to be lifted up
-            // For now, emit a custom event to request this operation, or you can extend the API to pass parentId
-            // Here, just call onUpdateComponent with a special signal
-            onUpdateComponent(component.id, { props: { ...currentProps, __setAsBackground: true } });
-        } else if (component.type === 'image' && !currentProps.background && currentProps.__wasBackground) {
-            // If unchecking, restore image as child and clear backgroundImage
-            onUpdateComponent(component.id, { props: { ...currentProps, __restoreFromBackground: true } });
-        } else {
-            onUpdateComponent(component.id, { props: currentProps });
-        }
-    };
-
-    const renderPropField = (key: string, value: string) => {
-        const commonInputStyle = { width: 'calc(100% - 12px)', padding: '8px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '10px', marginBottom: '6px', background: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)' };
-        let inputElement;
-
-        if (key === 'flexDirection' && component.type === 'container') {
-            inputElement = (
-                <select style={commonInputStyle} value={value} onChange={(e) => handleChange(key, e.target.value, 'string')}>
-                    <option value="row">Row</option>
-                    <option value="column">Column</option>
-                    <option value="row-reverse">Row Reverse</option>
-                    <option value="column-reverse">Column Reverse</option>
-                </select>
-            );
-        } else if (typeof value === 'boolean') {
-            inputElement = <input type="checkbox" checked={!!value} onChange={(e) => handleChange(key, e.target.checked.toString(), 'boolean')} />;
-        } else if (typeof value === 'number' || (typeof value === 'string' && !isNaN(parseFloat(value)) && (key.includes('size') || key.includes('width') || key.includes('height') || key.includes('padding') || key.includes('margin') || key.includes('gap') || key.includes('radius')))) {
-            inputElement = <input type="number" style={commonInputStyle} value={value} onChange={(e) => handleChange(key, e.target.value, 'number')} />;
-        } else if (typeof value === 'string' && (value.startsWith('#') || value.startsWith('rgb'))) {
-            inputElement = <input type="color" style={{ ...commonInputStyle, height: '36px' }} value={value} onChange={(e) => handleChange(key, e.target.value, 'string')} />;
-        } else if (key === 'textAlign' || key === 'objectFit' || (key === 'display' && component.type === 'container')) {
-            const options = {
-                textAlign: ['left', 'center', 'right', 'justify'],
-                objectFit: ['fill', 'contain', 'cover', 'none', 'scale-down'],
-                display: ['flex', 'block', 'grid', 'inline-flex'] // Add more as needed
-            };
-            inputElement = (
-                <select style={{ ...commonInputStyle, appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none', paddingRight: '28px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\'><path fill=\'%236b7280\' d=\'M7 10l5 5 5-5z\'/></svg>")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }} value={value} onChange={(e) => handleChange(key, e.target.value, 'string')}>
-                    {options[key]?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-            );
-        }
-        else {
-            inputElement = <input type="text" style={commonInputStyle} value={value} onChange={(e) => handleChange(key, e.target.value, 'string')} />;
-        }
-
-        return (
-            <div key={key} style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px', textTransform: 'capitalize' }}>
-                    {key.replace(/([A-Z])/g, ' $1')}:
-                </label>
-                {inputElement}
-            </div>
-        );
-    };
-
-    // Common offset options for positioning
-    const offsetOptions = ['auto', '0', '5px', '10px', '20px', '50%', '100px'];
-
-    const renderOffsetSelect = (key: 'top' | 'left' | 'right' | 'bottom') => {
-        const value = currentProps[key] ?? '';
-        const isCustom = value !== '' && typeof value === 'string' && !offsetOptions.includes(value);
-        return (
-            <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px', textTransform: 'capitalize' }}>{key}:</label>
-                <select
-                    style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px', marginBottom: '3px' }}
-                    value={isCustom ? 'custom' : (value === '' ? 'auto' : value as string)}
-                    onChange={e => {
-                        const v = e.target.value;
-                        if (v === 'custom') return; // keep current, show input
-                        handleChange(key, v === 'auto' ? '' : v, 'string');
-                    }}
-                >
-                    {offsetOptions.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                    <option value="custom">custom…</option>
-                </select>
-                {isCustom && (
-                    <input
-                        type="text"
-                        style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px' }}
-                        value={value}
-                        onChange={e => handleChange(key, e.target.value, 'string')}
-                        placeholder="e.g. 12px, 2rem"
-                    />
-                )}
-            </div>
-        );
-    };
-
-    // Parse CSS box shorthand (margin/padding) into 4 sides
-    const parseBoxShorthand = (value: string | undefined): [string, string, string, string] => {
-        const v = (value || '').trim();
-        if (!v) return ['0', '0', '0', '0'];
-        const parts = v.split(/\s+/);
-        if (parts.length === 1) return [parts[0], parts[0], parts[0], parts[0]];
-        if (parts.length === 2) return [parts[0], parts[1], parts[0], parts[1]];
-        if (parts.length === 3) return [parts[0], parts[1], parts[2], parts[1]];
-        return [parts[0], parts[1], parts[2], parts[3]];
-    };
-
-    const joinBoxShorthand = (top: string, right: string, bottom: string, left: string) => {
-        return `${top} ${right} ${bottom} ${left}`.trim();
-    };
-
-    const renderBoxInputs = (boxKey: 'margin' | 'padding', label: string) => {
-        if (typeof currentProps[boxKey] !== 'string') return null;
-        const [t, r, b, l] = parseBoxShorthand(currentProps[boxKey]);
-        const setSide = (side: 'top' | 'right' | 'bottom' | 'left', val: string) => {
-            const next = { top: t, right: r, bottom: b, left: l } as Record<string, string>;
-            next[side] = val;
-            handleChange(boxKey, joinBoxShorthand(next.top, next.right, next.bottom, next.left), 'string');
-        };
-        const inputStyle = { width: 'calc(25% - 6px)', padding: '8px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '10px', background: '#fff' } as const;
-        const labelStyle = { display: 'block', fontSize: '0.9em', marginBottom: '3px' } as const;
-        return (
-            <div style={{ marginBottom: '10px' }}>
-                <label style={labelStyle}>{label}</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <input type="text" style={inputStyle} value={t} onChange={e => setSide('top', e.target.value)} placeholder="top" />
-                    <input type="text" style={inputStyle} value={r} onChange={e => setSide('right', e.target.value)} placeholder="right" />
-                    <input type="text" style={inputStyle} value={b} onChange={e => setSide('bottom', e.target.value)} placeholder="bottom" />
-                    <input type="text" style={inputStyle} value={l} onChange={e => setSide('left', e.target.value)} placeholder="left" />
-                </div>
-            </div>
-        );
-    };
-
+const PropertyGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+    const [isOpen, setIsOpen] = useState(true);
     return (
-        <div style={{ padding: '15px' }} onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleApply();
-            }
-        }}>
-            <h4 style={{ marginTop: 0, marginBottom: '10px', fontSize: '1em' }}>
-                Edit: {component.type}
-                <span style={{ fontSize: '0.7em', color: '#777', marginLeft: '5px' }}>({component.id.slice(-5)})</span>
-            </h4>
-            <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '5px' }}>
-                {/* Always show container layout controls */}
-                {component.type === 'container' && (
-                    <>
-                        {renderPropField('flexDirection', currentProps.flexDirection || 'column')}
-                        <div style={{ marginBottom: '10px' }}>
-                            <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>
-                                Justify Content:
-                            </label>
-                            <select
-                                style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px', marginBottom: '3px' }}
-                                value={currentProps.justifyContent || 'flex-start'}
-                                onChange={(e) => handleChange('justifyContent', e.target.value, 'string')}
-                            >
-                                <option value="flex-start">flex-start</option>
-                                <option value="center">center</option>
-                                <option value="flex-end">flex-end</option>
-                                <option value="space-between">space-between</option>
-                                <option value="space-around">space-around</option>
-                                <option value="space-evenly">space-evenly</option>
-                            </select>
-                        </div>
-                    </>
-                )}
-                {/* Always show sizing, margin and padding for all elements */}
-                {renderPropField('width', currentProps.width ?? 'auto')}
-                {renderPropField('height', currentProps.height ?? 'auto')}
-                {renderBoxInputs('margin', 'Margin (TRBL)')}
-                {renderBoxInputs('padding', 'Padding (TRBL)')}
-                {/* Icon specific controls */}
-                {component.type === 'icon' && (
-                    <>
-                        {renderPropField('name', currentProps.name || 'Square')}
-                        {renderPropField('size', (currentProps.size || 24).toString())}
-                        {renderPropField('color', currentProps.color || '#111827')}
-                    </>
-                )}
-                {/* Input specific controls */}
-                {component.type === 'input' && (
-                    <>
-                        <div style={{ marginBottom: '10px' }}>
-                            <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>Type</label>
-                            <select style={{ width: '100%', padding: '8px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '10px', marginBottom: '6px', appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none', paddingRight: '28px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\'><path fill=\'%236b7280\' d=\'M7 10l5 5 5-5z\'/></svg>")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }} value={currentProps.kind || 'text'} onChange={(e) => handleChange('kind', e.target.value, 'string')}>
-                                <option value="text">text</option>
-                                <option value="checkbox">checkbox</option>
-                                <option value="radio">radio</option>
-                            </select>
-                        </div>
-                        {renderPropField('label', currentProps.label || '')}
-                        {renderPropField('placeholder', currentProps.placeholder || '')}
-                    </>
-                )}
-                {/* B I U buttons for text */}
-                {component.type === 'text' && (
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                        <button
-                            type="button"
-                            style={{ fontWeight: 'bold', fontSize: 18, width: 28, height: 28, border: currentProps.bold ? '2px solid #007bff' : '1px solid #ccc', borderRadius: 4, background: currentProps.bold ? '#e6f0ff' : '#fff', cursor: 'pointer' }}
-                            onClick={() => setCurrentProps(prev => ({ ...prev, bold: !prev.bold }))}
-                            title="Bold"
-                        >B</button>
-                        <button
-                            type="button"
-                            style={{ fontStyle: 'italic', fontSize: 18, width: 28, height: 28, border: currentProps.italic ? '2px solid #007bff' : '1px solid #ccc', borderRadius: 4, background: currentProps.italic ? '#e6f0ff' : '#fff', cursor: 'pointer' }}
-                            onClick={() => setCurrentProps(prev => ({ ...prev, italic: !prev.italic }))}
-                            title="Italic"
-                        >I</button>
-                        <button
-                            type="button"
-                            style={{ textDecoration: 'underline', fontSize: 18, width: 28, height: 28, border: currentProps.underline ? '2px solid #007bff' : '1px solid #ccc', borderRadius: 4, background: currentProps.underline ? '#e6f0ff' : '#fff', cursor: 'pointer' }}
-                            onClick={() => setCurrentProps(prev => ({ ...prev, underline: !prev.underline }))}
-                            title="Underline"
-                        >U</button>
-                    </div>
-                )}
-                {Object.entries(currentProps).map(([key, value]) =>
-                    (component.type === 'container' && key === 'flexDirection') ||
-                        ['margin', 'padding', 'width', 'height'].includes(key) ||
-                        (component.type === 'text' && ['bold', 'italic', 'underline'].includes(key)) ||
-                        (component.type === 'image' && ['position', 'top', 'left', 'right', 'bottom', 'background'].includes(key)) ||
-                        (component.type === 'icon' && ['name', 'size', 'color'].includes(key)) ||
-                        (component.type === 'input' && ['kind', 'label', 'placeholder'].includes(key))
-                        ? null : renderPropField(key, value?.toString() || "")
-                )}
-                {/* Image advanced positioning controls */}
-                {component.type === 'image' && (
-                    <>
-                        <div style={{ marginBottom: '10px' }}>
-                            <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>
-                                Position:
-                            </label>
-                            <select
-                                style={{ width: '100%', padding: '8px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '10px', marginBottom: '6px', appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none', paddingRight: '28px', backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\'><path fill=\'%236b7280\' d=\'M7 10l5 5 5-5z\'/></svg>")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
-                                value={currentProps.position || 'static'}
-                                onChange={e => handleChange('position', e.target.value, 'string')}
-                            >
-                                <option value="static">static</option>
-                                <option value="relative">relative</option>
-                                <option value="absolute">absolute</option>
-                                <option value="fixed">fixed</option>
-                                <option value="sticky">sticky</option>
-                            </select>
-                        </div>
-                        {['relative', 'absolute', 'fixed', 'sticky'].includes(currentProps.position || "") && (
-                            <>
-                                {renderOffsetSelect('top')}
-                                {renderOffsetSelect('left')}
-                                {renderOffsetSelect('right')}
-                                {renderOffsetSelect('bottom')}
-                            </>
-                        )}
-                        <div style={{ marginBottom: '10px' }}>
-                            <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px' }}>Background:</label>
-                            <input type="checkbox" checked={!!currentProps.background} onChange={e => {
-                                const checked = e.target.checked;
-                                setCurrentProps(prev => ({
-                                    ...prev,
-                                    background: checked,
-                                    __wasBackground: checked ? true : prev.__wasBackground,
-                                }));
-                            }} />
-                            <span style={{ marginLeft: 8 }}>Use image as container background</span>
-                        </div>
-                    </>
-                )}
-            </div>
-            <button onClick={handleApply} style={{ background: '#28a745', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', width: '100%', marginTop: '15px' }}>
-                Apply Changes
+        <div className="border border-slate-200 rounded-lg">
+            <button className="flex justify-between items-center w-full p-2 bg-slate-50 font-semibold text-sm rounded-t-lg" onClick={() => setIsOpen(!isOpen)}>
+                <span>{title}</span>
+                <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
             </button>
-            <button onClick={async () => {
-                try {
-                    const data = JSON.stringify({ id: component.id, type: component.type, props: currentProps, children: component.children }, null, 2);
-                    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
-                        await navigator.clipboard.writeText(data);
-                        alert('Component JSON copied to clipboard');
-                    } else {
-                        const ta = document.createElement('textarea');
-                        ta.value = data;
-                        document.body.appendChild(ta);
-                        ta.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(ta);
-                        alert('Component JSON copied to clipboard');
-                    }
-                } catch (e) {
-                    alert('Failed to copy JSON');
-                    console.error(e);
-                }
-            }} style={{ background: '#111827', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer', width: '100%', marginTop: '10px' }}>
-                Copy JSON
-            </button>
-            <button onClick={() => onRemoveComponent(component.id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer', width: '100%', marginTop: '10px' }}>
-                Remove Component
-            </button>
+            {isOpen && <div className="p-3 space-y-4">{children}</div>}
         </div>
     );
 };
+
+const ControlWrapper: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+    <div>
+        <label className="block text-sm font-medium text-slate-600 mb-1.5">{label}</label>
+        {children}
+    </div>
+);
+
+const baseInputStyles = "w-full bg-white border border-slate-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none";
+
+const BoxControl: React.FC<{ label: string, value: string, onChange: (value: string) => void }> = ({ label, value, onChange }) => {
+    // This state is local to each BoxControl instance
+    const [mode, setMode] = useState<'overall' | 'axis' | 'individual'>('overall');
+
+    const parseBoxShorthand = (v: string | undefined): [string, string, string, string] => {
+        const parts = (v || '0').trim().split(/\s+/).map(p => String(parseFloat(p) || 0));
+        if (parts.length === 1) return [parts[0], parts[0], parts[0], parts[0]];
+        if (parts.length === 2) return [parts[0], parts[1], parts[0], parts[1]];
+        if (parts.length === 3) return [parts[0], parts[1], parts[2], parts[1]];
+        return [parts[0] || '0', parts[1] || '0', parts[2] || '0', parts[3] || '0'];
+    };
+
+    const joinBoxShorthand = (t: string, r: string, b: string, l: string): string => {
+        const format = (val: string) => (parseFloat(val) === 0 ? '0' : `${parseFloat(val) || 0}px`);
+        return `${format(t)} ${format(r)} ${format(b)} ${format(l)}`;
+    };
+
+    const [t, r, b, l] = parseBoxShorthand(value);
+
+    const renderInputs = () => {
+        switch (mode) {
+            case 'overall': return <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, e.target.value, e.target.value, e.target.value))} placeholder="all" />;
+            case 'axis': return (
+                <div className="flex gap-2">
+                    <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, r, e.target.value, l))} placeholder="top/bottom" />
+                    <input type="number" className={baseInputStyles} value={l} onChange={e => onChange(joinBoxShorthand(t, e.target.value, b, e.target.value))} placeholder="left/right" />
+                </div>
+            );
+            case 'individual': return (
+                <div className="grid grid-cols-4 gap-2">
+                    <input type="number" className={baseInputStyles} value={t} onChange={e => onChange(joinBoxShorthand(e.target.value, r, b, l))} placeholder="T" />
+                    <input type="number" className={baseInputStyles} value={r} onChange={e => onChange(joinBoxShorthand(t, e.target.value, b, l))} placeholder="R" />
+                    <input type="number" className={baseInputStyles} value={b} onChange={e => onChange(joinBoxShorthand(t, r, e.target.value, l))} placeholder="B" />
+                    <input type="number" className={baseInputStyles} value={l} onChange={e => onChange(joinBoxShorthand(t, r, b, e.target.value))} placeholder="L" />
+                </div>
+            );
+        }
+    };
+
+    const ModeButton: React.FC<{ targetMode: 'overall' | 'axis' | 'individual'; children: React.ReactNode }> = ({ targetMode, children }) => (
+        <button onClick={() => setMode(targetMode)} className={`p-1.5 rounded-md ${mode === targetMode ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 hover:bg-slate-200'}`}>{children}</button>
+    );
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-1.5">
+                <label className="text-sm font-medium text-slate-600">{label}</label>
+                <div className="flex gap-1">
+                    <ModeButton targetMode="overall"><Square size={14} /></ModeButton>
+                    <ModeButton targetMode="axis"><ArrowLeftRight size={14} /></ModeButton>
+                    <ModeButton targetMode="individual"><PanelTopDashed size={14} /></ModeButton>
+                </div>
+            </div>
+            {renderInputs()}
+        </div>
+    );
+};
+
+// --- Main Editor Component ---
+
+const PropertiesEditor: React.FC<PropertiesEditorProps> = ({ component, onUpdateComponent, onRemoveComponent }) => {
+    const [currentProps, setCurrentProps] = useState(component.props);
+
+    useEffect(() => { setCurrentProps(component.props); }, [component]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                onUpdateComponent(component.id, { props: currentProps });
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => { window.removeEventListener('keydown', handleKeyDown); };
+    }, [component.id, currentProps, onUpdateComponent]);
+
+    const handlePropChange = useCallback((propName: string, value: any) => {
+        setCurrentProps(prev => ({ ...prev, [propName]: value }));
+    }, []);
+
+    const handleApply = () => { onUpdateComponent(component.id, { props: currentProps }); };
+
+    const renderControl = (control: ControlDefinition) => {
+        const { prop, label, control: controlType, options = [] } = control;
+        const value = currentProps[prop] ?? '';
+
+        switch (controlType) {
+            case 'text':
+                return <ControlWrapper label={label}><input type="text" className={baseInputStyles} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
+            case 'number':
+                return <ControlWrapper label={label}><input type={controlType} className={baseInputStyles} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
+
+            case 'color':
+                return <ControlWrapper label={label}><input type="color" className={`${baseInputStyles} p-1 h-10`} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)} /></ControlWrapper>;
+
+            case 'select':
+                return <ControlWrapper label={label}><select className={baseInputStyles} value={value.toString()} onChange={e => handlePropChange(prop, e.target.value)}>{options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></ControlWrapper>;
+
+            case 'button-group':
+                return (
+                    <ControlWrapper label={label}>
+                        <div className="flex items-center gap-1">
+                            {options.map(opt => (
+                                <button key={opt.value} onClick={() => handlePropChange(prop, value === opt.value ? '' : opt.value)} className={`p-2 rounded-md transition ${value === opt.value ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}>{opt.icon || opt.label}</button>
+                            ))}
+                        </div>
+                    </ControlWrapper>
+                );
+
+            case 'box':
+                return <BoxControl label={label} value={value.toString()} onChange={(newValue) => handlePropChange(prop, newValue)} />;
+
+            default: return null;
+        }
+    };
+
+    const schema = componentEditorSchema[component.type];
+
+    return (
+        <div className="flex flex-col h-full font-sans">
+            <div className="p-3 border-b border-slate-200">
+                <h4 className="m-0 text-base font-semibold inline-block capitalize">{component.type}</h4>
+                <span className="text-xs text-slate-400 ml-2">({component.id.slice(-5)})</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                {!schema || schema.length === 0 ? (
+                    <div className="text-center text-slate-400 p-10 flex flex-col items-center gap-3">
+                        <Settings size={24} />
+                        <span>No properties defined for this component.</span>
+                    </div>
+                ) : (
+                    schema.map(group => (
+                        <PropertyGroup key={group.title} title={group.title}>
+                            {group.controls.map(renderControl)}
+                        </PropertyGroup>
+                    ))
+                )}
+            </div>
+
+            <div className="p-3 border-t border-slate-200 flex gap-2">
+                <button className="flex-1 p-2 rounded-md font-semibold cursor-pointer transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1.5" onClick={() => onRemoveComponent(component.id)}>
+                    <Trash2 size={14} /> Remove
+                </button>
+                <button className="flex-1 p-2 rounded-md font-semibold cursor-pointer transition bg-blue-600 text-white hover:bg-blue-700" onClick={handleApply}>
+                    Apply
+                </button>
+            </div>
+        </div>
+    );
+};
+
 export default PropertiesEditor;

@@ -1,4 +1,4 @@
-import { type FC, type MouseEvent, type ForwardedRef, forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { componentMap } from './componentMap';
 import type { ContainerComponentProps, BuilderComponent, ChildPlacement } from '@/utils/types';
 
@@ -80,7 +80,7 @@ const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
                         selectedComponentId={selectedComponentId}
                         onAddComponentRequest={onAddComponentRequest}
                     />
-                    {isRow && (
+                    {isRow && selectedComponentId === childComp.id && (
                         <div style={{ display: 'flex', gap: 4, marginTop: 2, alignItems: 'center' }}>
                             <button onClick={() => handleMove(idx, 'left')} style={{ fontSize: 12 }}>&larr;</button>
                             <button onClick={() => handleMove(idx, 'right')} style={{ fontSize: 12 }}>&rarr;</button>
@@ -114,7 +114,7 @@ const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
                 {sortedChildren.length > 0 ? (
                     sortedChildren.map(renderChild)
                 ) : (
-                    <div 
+                    <div
                         style={{ color: '#aaa', textAlign: 'center', padding: '20px 0' }}
                         onClick={handleEmptyClick}
                     >

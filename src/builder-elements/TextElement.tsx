@@ -7,7 +7,6 @@ const TextElement: FC<BaseComponentProps<TextProps>> = ({ id, props, onSelect, i
         color: props.color || '#333333',
         padding: props.padding ?? '0',
         margin: props.margin ?? '0',
-        border: `2px solid ${isSelected ? 'red' : 'transparent'}`,
         textAlign: props.textAlign || 'left',
         fontWeight: props.bold ? 'bold' : (props.fontWeight || 'normal'),
         fontStyle: props.italic ? 'italic' : 'normal',
@@ -16,8 +15,9 @@ const TextElement: FC<BaseComponentProps<TextProps>> = ({ id, props, onSelect, i
         letterSpacing: props.letterSpacing || undefined,
         textTransform: props.textTransform || undefined,
         cursor: 'pointer',
-        width: props.width || undefined,
-        height: props.height || undefined,
+
+        outline: isSelected ? '2px solid #3b82f6' : 'none', // A vibrant blue outline
+
     } as const;
 
     const handleClick = (e: MouseEvent) => {
@@ -26,7 +26,7 @@ const TextElement: FC<BaseComponentProps<TextProps>> = ({ id, props, onSelect, i
     };
 
     return (
-        <div style={style} onClick={handleClick}>
+        <div style={style} onClick={handleClick} className={`${isSelected && "rounded-lg"}`}>
             {props.content || 'Text Element. Click to edit.'}
         </div>
     );

@@ -49,23 +49,6 @@ export const availableComponentsList: ComponentDefinition[] = [
     id: "",
     props: {},
     type: "container",
-    label: "Container (Column)",
-    defaultProps: {
-      padding: "0",
-      margin: "0",
-      backgroundColor: "rgba(200,200,200,0.1)",
-      minHeight: "80px",
-      name: "New Container",
-      flexDirection: "column",
-      width: "auto",
-      height: "auto",
-    },
-    children: [],
-  },
-  {
-    id: "",
-    props: {},
-    type: "container",
     label: "Container (Row)",
     defaultProps: {
       padding: "0",
