@@ -1,0 +1,95 @@
+import type { ComponentDefinition } from "@/types/builder";
+
+export const availableComponentsList: ComponentDefinition[] = [
+  {
+    type: "text",
+    label: "Text",
+    defaultProps: {
+      content: "New Text Block",
+      fontSize: "16px",
+      color: "#333",
+      margin: "0",
+      padding: "0",
+      width: "auto",
+      height: "auto",
+    },
+  },
+  {
+    type: "button",
+    label: "Button",
+    defaultProps: {
+      text: "Click Me",
+      backgroundColor: "#007bff",
+      color: "#ffffff",
+      margin: "0",
+      padding: "0",
+      width: "auto",
+      height: "auto",
+    },
+  },
+  {
+    type: "image",
+    label: "Image",
+    defaultProps: {
+      src: "",
+      alt: "My Image",
+      width: "auto",
+      height: "auto",
+      margin: "0",
+      padding: "0",
+    },
+  },
+  {
+    type: "container",
+    label: "Container (Column)",
+    defaultProps: {
+      padding: "0",
+      margin: "0",
+      backgroundColor: "rgba(200,200,200,0.1)",
+      minHeight: "80px",
+      name: "New Container",
+      flexDirection: "column",
+      width: "auto",
+      height: "auto",
+    },
+    children: [],
+  },
+  {
+    type: "container",
+    label: "Container (Row)",
+    defaultProps: {
+      padding: "0",
+      margin: "0",
+      backgroundColor: "rgba(200,200,200,0.1)",
+      minHeight: "80px",
+      name: "Row Container",
+      flexDirection: "row",
+      alignItems: "center",
+      width: "auto",
+      height: "auto",
+    },
+    children: [],
+  },
+  {
+    type: "input",
+    label: "Input",
+    defaultProps: {
+      kind: "text",
+      margin: "0",
+      padding: "0",
+      width: "auto",
+      height: "auto",
+    },
+  },
+  {
+    type: "icon",
+    label: "Icon",
+    defaultProps: {
+      name: "Square",
+      size: 24,
+      color: "#111827",
+      margin: "0",
+      padding: "0",
+    },
+  },
+];

@@ -1,11 +1,12 @@
 // src/App.jsx
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import EditorLayout from './components/EditorLayout';
 import CanvasRenderer from './renderer/CanvasRenderer';
 import PropertiesEditor from './components/PropertiesEditor';
 import ComponentsList from './components/ComponentsList';
-import useBuilder, { type Builder } from './hooks/useBuilder';
+import useBuilder, { type Component, type Builder } from './hooks/useBuilder';
 import ComponentPalette from './components/CommandPallette';
+import type { ComponentType } from './types/builder';
 
 // Simple ID generator
 const generateId = () => `el-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 5)}`;
@@ -17,7 +18,6 @@ function App() {
         addComponent: addBuilderComponent,
         removeComponent: removeBuilderComponent,
         updateComponent: updateBuilderComponent,
-        setStyles: setBuilderStyles,
         updateChildPlacement, // <-- add this
     } = useBuilder();
 
@@ -48,7 +48,7 @@ function App() {
         setSelectedComponentId(id);
     }, []);
 
-    const handleAddComponent = useCallback((type: any, defaultProps = {}, children?: any[]) => {
+    const handleAddComponent = useCallback((type: ComponentType, defaultProps = {}, children?: Component[]) => {
         const newComponent = {
             id: generateId(),
             type: type,
@@ -59,7 +59,7 @@ function App() {
         let parentId = targetParentIdForNewComponent;
         if (!parentId && selectedComponentId && builder) {
             // Find the selected component
-            const findComponentRecursive = (component: any, id: string | null): any | null => {
+            const findComponentRecursive = (component: Component, id: string | null): Component | null => {
                 if (!id) return null;
                 if (component.id === id) {
                     return component;
@@ -100,7 +100,7 @@ function App() {
 
 
     // Find the selected component recursively in the builder tree
-    function findComponentRecursive(component: any, id: string | null): any | null {
+    function findComponentRecursive(component: Component, id: string | null): Component | null {
         if (!id) return null;
         if (component.id === id) {
             return component;

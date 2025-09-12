@@ -1,3 +1,5 @@
+import type { ComponentType } from "@/types/builder";
+
 export interface BaseProps {
   margin?: string;
   padding?: string;
@@ -10,20 +12,22 @@ export interface ButtonProps extends BaseProps {
   borderColor?: string;
   fontSize?: string;
   borderRadius?: string;
+  width?: string;
+  height?: string;
 }
 
 export interface TextProps extends BaseProps {
   content?: string;
   fontSize?: string;
   color?: string;
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  textAlign?: "left" | "center" | "right" | "justify";
   fontWeight?: string | number;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
   lineHeight?: string | number;
   letterSpacing?: string | number;
-  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
 }
 
 export interface ImageProps extends BaseProps {
@@ -31,9 +35,9 @@ export interface ImageProps extends BaseProps {
   alt?: string;
   width?: string;
   height?: string;
-  objectFit?: 'fill' | 'contain' | 'cover' | 'none' | 'scale-down';
+  objectFit?: "fill" | "contain" | "cover" | "none" | "scale-down";
   borderRadius?: string;
-  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+  position?: "static" | "relative" | "absolute" | "fixed" | "sticky";
   top?: string;
   left?: string;
   right?: string;
@@ -44,8 +48,8 @@ export interface ContainerProps extends BaseProps {
   backgroundColor?: string;
   borderColor?: string;
   minHeight?: string;
-  display?: 'flex' | 'block' | 'grid' | 'inline-flex';
-  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
+  display?: "flex" | "block" | "grid" | "inline-flex";
+  flexDirection?: "row" | "column" | "row-reverse" | "column-reverse";
   alignItems?: string;
   justifyContent?: string;
   gap?: string;
@@ -56,7 +60,7 @@ export interface ContainerProps extends BaseProps {
 }
 
 export interface InputProps extends BaseProps {
-  kind?: 'text' | 'checkbox' | 'radio';
+  kind?: "text" | "checkbox" | "radio";
   placeholder?: string;
   label?: string;
   width?: string;
@@ -71,7 +75,13 @@ export interface IconProps extends BaseProps {
 
 export interface ChildPlacement {
   order?: number;
-  alignSelf?: 'auto' | 'flex-start' | 'flex-end' | 'center' | 'baseline' | 'stretch';
+  alignSelf?:
+    | "auto"
+    | "flex-start"
+    | "flex-end"
+    | "center"
+    | "baseline"
+    | "stretch";
 }
 
 export interface BaseComponentProps<T extends ComponentProps> {
@@ -81,18 +91,28 @@ export interface BaseComponentProps<T extends ComponentProps> {
   isSelected: boolean;
 }
 
-export interface ContainerComponentProps extends BaseComponentProps<ContainerProps> {
+export interface ContainerComponentProps
+  extends BaseComponentProps<ContainerProps> {
   children?: BuilderComponent[];
   selectedComponentId?: string | null;
   onAddComponentRequest?: (id: string) => void;
-  updateChildPlacement?: (childId: string, placement: Partial<ChildPlacement>) => void;
+  updateChildPlacement?: (
+    childId: string,
+    placement: Partial<ChildPlacement>,
+  ) => void;
 }
 
-export type ComponentProps = ButtonProps | TextProps | ImageProps | ContainerProps | InputProps | IconProps;
+export type ComponentProps =
+  | ButtonProps
+  | TextProps
+  | ImageProps
+  | ContainerProps
+  | InputProps
+  | IconProps;
 
 export interface BuilderComponent {
   id: string;
-  type: 'button' | 'text' | 'image' | 'container' | 'input' | 'icon';
+  type: ComponentType;
   props: ComponentProps;
   children?: BuilderComponent[];
   placement?: ChildPlacement;
@@ -105,18 +125,4 @@ export interface Builder {
   styles: {
     [key: string]: string | number;
   };
-}
-
-// React specific type declarations
-declare module 'react' {
-  interface JSX {
-    IntrinsicElements: {
-      [elemName: string]: any;
-    };
-  }
-}
-
-declare module 'react/jsx-runtime' {
-  export default any;
-  export const Fragment: any;
 }

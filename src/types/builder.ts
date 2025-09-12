@@ -24,11 +24,11 @@ export interface PropertyOption {
 }
 
 export interface PropertyDefinition {
-  name: keyof any; // The actual key in the props object (e.g., 'fontSize') - will be typed per component
+  name: keyof string; // The actual key in the props object (e.g., 'fontSize') - will be typed per component
   label: string;
   type: "string" | "number" | "boolean" | "enum" | "color" | "url";
   editor: PropertyEditorType;
-  defaultValue: any;
+  defaultValue: string;
   applyAs: PropertyApplyAs;
   styleKey?: string; // CSS property name if applyAs is 'style' (e.g., 'fontSize', 'backgroundColor')
   attributeName?: string; // HTML attribute name if applyAs is 'attribute' (e.g., 'src', 'alt')
@@ -39,7 +39,7 @@ export interface PropertyDefinition {
   step?: number;
   placeholder?: string;
   group?: "Layout" | "Typography" | "Appearance" | "Content" | "Behavior"; // For organizing in editor
-  isVisible?: (props: Record<string, any>) => boolean; // Conditionally show property in editor
+  isVisible?: (props: Record<string, boolean>) => boolean; // Conditionally show property in editor
 }
 
 // Generic Props interface for a component based on its schema
@@ -51,7 +51,13 @@ export type ComponentProps<T extends Record<string, PropertyDefinition>> = {
       : string; // Default to string for others (enum, color, url will be strings)
 };
 
-export type ComponentType = "button" | "input" | "container" | "text" | "image";
+export type ComponentType =
+  | "button"
+  | "input"
+  | "container"
+  | "text"
+  | "image"
+  | "icon";
 
 // Describes the schema for a component type
 export interface ComponentSchema<
@@ -68,7 +74,9 @@ export interface ComponentSchema<
   // Optional: Function to generate styles/classes from props
   // This is where your use[Element]Prop() idea can be integrated at schema level
   getStyleProps?: (props: ComponentProps<PropsDef>) => React.CSSProperties;
-  getAttributeProps?: (props: ComponentProps<PropsDef>) => Record<string, any>;
+  getAttributeProps?: (
+    props: ComponentProps<PropsDef>,
+  ) => Record<string, string>;
   getClassNameProps?: (props: ComponentProps<PropsDef>) => string;
   getContentProp?: (props: ComponentProps<PropsDef>) => keyof PropsDef | null; // Which prop holds the main content
 }
@@ -93,3 +101,14 @@ export interface BuilderData {
   components: ComponentInstanceData[]; // Array of any component instance type
   globalStyles: React.CSSProperties;
 }
+
+export interface ComponentDefinition {
+  id: string;
+  props: PropsType;
+  type: ComponentType;
+  label: string;
+  defaultProps: PropsType;
+  children?: ComponentDefinition[];
+}
+
+export type PropsType = Record<string, string | number | boolean | undefined>;

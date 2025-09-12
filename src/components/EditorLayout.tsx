@@ -1,5 +1,12 @@
 import React from 'react';
-const EditorLayout = ({ topbar, sidebar, canvas, properties }) => (
+
+interface EditorLayoutProps {
+    topbar: React.ReactNode;
+    sidebar: React.ReactNode;
+    canvas: React.ReactNode;
+    properties: React.ReactNode;
+}
+const EditorLayout = ({ topbar, sidebar, canvas, properties }: EditorLayoutProps) => (
     <div
         style={{
             display: 'flex',

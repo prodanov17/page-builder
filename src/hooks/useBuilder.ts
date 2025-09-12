@@ -1,11 +1,48 @@
 // src/hooks/useBuilder.js
 import { useState, useCallback } from "react";
 
+export type AlignSelfType =
+  | "auto"
+  | "flex-start"
+  | "flex-end"
+  | "center"
+  | "baseline"
+  | "stretch";
+
+export type JustifyContentType =
+  | "flex-start"
+  | "flex-end"
+  | "center"
+  | "space-between"
+  | "space-around"
+  | "space-evenly";
+
 export interface Component {
   id: string;
-  type: "button" | "input" | "container" | "text" | "image";
+  type: "button" | "input" | "container" | "text" | "image" | "icon" | "input";
   props: {
-    [key: string]: string | number | boolean;
+    [key: string]: string | number | boolean | undefined | null;
+    position?: string;
+    label?: string;
+    src?: string;
+    altText?: string;
+    width?: string;
+    height?: string;
+    content?: string;
+    fontSize?: string;
+    color?: string;
+    backgroundColor?: string;
+    padding?: string;
+    placeholder?: string;
+    name?: string;
+    size?: number;
+    justifyContent?: JustifyContentType;
+    flexDirection?: "row" | "column";
+    kind?: "text" | "checkbox" | "radio";
+  };
+  placement?: {
+    order?: number;
+    alignSelf?: AlignSelfType;
   };
   children?: Component[];
 }
@@ -95,7 +132,11 @@ const useBuilder = () => {
       if (!builder) return;
 
       // Helper to find parent container and its children
-      function findParentAndIndex(components: Component[], childId: string, parent: Component | null = null): { parent: Component | null, index: number, path: number[] } | null {
+      function findParentAndIndex(
+        components: Component[],
+        childId: string,
+        parent: Component | null = null,
+      ): { parent: Component | null; index: number; path: number[] } | null {
         for (let i = 0; i < components.length; i++) {
           const comp = components[i];
           if (comp.id === childId) {
@@ -113,29 +154,43 @@ const useBuilder = () => {
       }
 
       // Special logic for image background transfer
-      if (newPartialComponent.props && (newPartialComponent.props as any).__setAsBackground) {
+      if (
+        newPartialComponent.props &&
+        newPartialComponent.props.__setAsBackground
+      ) {
         // Find parent container
         const parentInfo = findParentAndIndex(builder.components, id);
-        if (parentInfo && parentInfo.parent && parentInfo.parent.type === 'container') {
+        if (
+          parentInfo &&
+          parentInfo.parent &&
+          parentInfo.parent.type === "container"
+        ) {
           // Remove image from parent's children and set backgroundImage
           const parentId = parentInfo.parent.id;
-          const imageSrc = (newPartialComponent.props as any).src;
+          const imageSrc = newPartialComponent.props.src;
           // Remove image from children
-          function removeChildAndSetBackground(components: Component[]): Component[] {
-            return components.map(comp => {
+          function removeChildAndSetBackground(
+            components: Component[],
+          ): Component[] {
+            return components.map((comp) => {
               if (comp.id === parentId) {
                 return {
                   ...comp,
                   props: { ...comp.props, backgroundImage: imageSrc },
-                  children: (comp.children || []).filter(child => child.id !== id),
+                  children: (comp.children || []).filter(
+                    (child) => child.id !== id,
+                  ),
                 };
               } else if (comp.children) {
-                return { ...comp, children: removeChildAndSetBackground(comp.children) };
+                return {
+                  ...comp,
+                  children: removeChildAndSetBackground(comp.children),
+                };
               }
               return comp;
             });
           }
-          setBuilderInternal(prevBuilder => ({
+          setBuilderInternal((prevBuilder) => ({
             ...prevBuilder!,
             components: removeChildAndSetBackground(prevBuilder!.components),
           }));
@@ -143,30 +198,57 @@ const useBuilder = () => {
         }
       }
       // Special logic for restoring image from background
-      if (newPartialComponent.props && (newPartialComponent.props as any).__restoreFromBackground) {
+      if (
+        newPartialComponent.props &&
+        newPartialComponent.props.__restoreFromBackground
+      ) {
         // Find parent container
         const parentInfo = findParentAndIndex(builder.components, id);
-        if (parentInfo && parentInfo.parent && parentInfo.parent.type === 'container') {
+        if (
+          parentInfo &&
+          parentInfo.parent &&
+          parentInfo.parent.type === "container"
+        ) {
           const parentId = parentInfo.parent.id;
-          const imageSrc = (newPartialComponent.props as any).src;
+          // const imageSrc = newPartialComponent.props.src;
           // Add image back as child and clear backgroundImage
-          function addChildAndClearBackground(components: Component[]): Component[] {
-            return components.map(comp => {
+          function addChildAndClearBackground(
+            components: Component[],
+          ): Component[] {
+            return components.map((comp) => {
               if (comp.id === parentId) {
                 // Only add if not already present
-                const alreadyPresent = (comp.children || []).some(child => child.id === id);
+                const alreadyPresent = (comp.children || []).some(
+                  (child) => child.id === id,
+                );
                 return {
                   ...comp,
                   props: { ...comp.props, backgroundImage: undefined },
-                  children: alreadyPresent ? comp.children : [...(comp.children || []), { id, type: 'image', props: { ...newPartialComponent.props, background: false, __wasBackground: false } }],
+                  children: alreadyPresent
+                    ? comp.children
+                    : [
+                        ...(comp.children || []),
+                        {
+                          id,
+                          type: "image",
+                          props: {
+                            ...newPartialComponent.props,
+                            background: false,
+                            __wasBackground: false,
+                          },
+                        },
+                      ],
                 };
               } else if (comp.children) {
-                return { ...comp, children: addChildAndClearBackground(comp.children) };
+                return {
+                  ...comp,
+                  children: addChildAndClearBackground(comp.children),
+                };
               }
               return comp;
             });
           }
-          setBuilderInternal(prevBuilder => ({
+          setBuilderInternal((prevBuilder) => ({
             ...prevBuilder!,
             components: addChildAndClearBackground(prevBuilder!.components),
           }));
@@ -184,7 +266,7 @@ const useBuilder = () => {
             // Merge props carefully if only props are updated
             if (updates.props && !updates.type && !updates.children) {
               // Remove special keys
-              const { __setAsBackground, __restoreFromBackground, ...restProps } = updates.props as any;
+              const { ...restProps } = updates.props;
               return { ...comp, props: { ...comp.props, ...restProps } };
             }
             return { ...comp, ...updates };
@@ -222,7 +304,10 @@ const useBuilder = () => {
   );
 
   const updateChildPlacement = useCallback(
-    (childId: string, placement: Partial<{ order: number; alignSelf: string }>) => {
+    (
+      childId: string,
+      placement: { order?: number; alignSelf?: AlignSelfType },
+    ) => {
       if (!builder) return;
       function updatePlacementRecursive(components: Component[]): Component[] {
         return components.map((comp) => {
@@ -233,7 +318,10 @@ const useBuilder = () => {
             };
           }
           if (comp.children) {
-            return { ...comp, children: updatePlacementRecursive(comp.children) };
+            return {
+              ...comp,
+              children: updatePlacementRecursive(comp.children),
+            };
           }
           return comp;
         });

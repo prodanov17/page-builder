@@ -1,9 +1,21 @@
 // src/renderer/CanvasRenderer.jsx
-import React from 'react';
+import type { AlignSelfType, Component } from '@/hooks/useBuilder';
 import { componentMap } from '../builder-elements/componentMap';
+import type { ComponentType, PropsType } from '@/types/builder';
 
-const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedComponentId, onAddComponentRequestToContainer, updateChildPlacement }) => {
-    const renderComponent = (componentConfig) => {
+interface CanvasRendererProps {
+    components: Component[];
+    globalStyles: React.CSSProperties;
+    onSelectComponent: (id: string) => void;
+    selectedComponentId: string | null;
+    onAddComponentRequestToContainer: (containerId: string, type: ComponentType, defaultProps?: PropsType, children?: Component[]) => void;
+    updateChildPlacement: (childId: string,
+        placement: { order?: number; alignSelf?: AlignSelfType },
+    ) => void;
+}
+
+const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedComponentId, onAddComponentRequestToContainer, updateChildPlacement }: CanvasRendererProps) => {
+    const renderComponent = (componentConfig: Component) => {
         const ComponentToRender = componentMap[componentConfig.type];
 
         if (!ComponentToRender) {

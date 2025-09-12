@@ -1,4 +1,3 @@
-import { type ComponentType } from "react";
 import ButtonElement from "./ButtonElement";
 import TextElement from "./TextElement";
 import ImageElement from "./ImageElement";
@@ -8,7 +7,12 @@ import InputElement from "./InputElement";
 import IconElement from "./IconElement";
 
 type ComponentMapType = {
-  [K in BuilderComponent["type"]]: ComponentType<BaseComponentProps<any>>;
+  button: React.ComponentType<BaseComponentProps<BuilderComponent["props"]>>;
+  text: React.ComponentType<BaseComponentProps<BuilderComponent["props"]>>;
+  image: React.ComponentType<BaseComponentProps<BuilderComponent["props"]>>;
+  container: React.ComponentType<BaseComponentProps<BuilderComponent["props"]>>;
+  input: React.ComponentType<BaseComponentProps<BuilderComponent["props"]>>;
+  icon: React.ComponentType<BaseComponentProps<BuilderComponent["props"]>>;
 };
 
 export const componentMap: ComponentMapType = {
@@ -16,18 +20,17 @@ export const componentMap: ComponentMapType = {
   text: TextElement,
   image: ImageElement,
   container: ContainerElement,
-  input: InputElement as any,
-  icon: IconElement as any,
-};
-
-type PropField = {
-  name: string;
-  label: string;
-  type: "string" | "number" | "boolean";
+  input: InputElement,
+  icon: IconElement,
 };
 
 type ComponentPropsMapType = {
-  [K in BuilderComponent["type"]]: PropField[];
+  [key in keyof ComponentMapType]: {
+    name: string;
+    label: string;
+    type: "string" | "number" | "boolean" | "enum" | "color" | "url";
+    options?: string[]; // For enum types
+  }[];
 };
 
 export const componentPropsMap: ComponentPropsMapType = {
@@ -101,6 +104,35 @@ export const componentPropsMap: ComponentPropsMapType = {
     {
       name: "flexDirection",
       label: "Flex Direction",
+      type: "string",
+    },
+  ],
+  input: [
+    {
+      name: "placeholder",
+      label: "Placeholder",
+      type: "string",
+    },
+    {
+      name: "width",
+      label: "Width",
+      type: "string",
+    },
+    {
+      name: "height",
+      label: "Height",
+      type: "string",
+    },
+  ],
+  icon: [
+    {
+      name: "width",
+      label: "Width",
+      type: "string",
+    },
+    {
+      name: "height",
+      label: "Height",
       type: "string",
     },
   ],

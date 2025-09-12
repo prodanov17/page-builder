@@ -1,8 +1,9 @@
+import type { Component } from '@/hooks/useBuilder';
 import React from 'react';
 
 type PropertiesEditorProps = {
-    component: any;
-    onUpdateComponent: (id: string, update: any) => void;
+    component: Component;
+    onUpdateComponent: (id: string, update: object) => void;
     onRemoveComponent: (id: string) => void;
 };
 
@@ -15,7 +16,7 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
         // setComponentType(component.type);
     }, [component]); // Re-initialize when component selection changes
 
-    const handleChange = React.useCallback((propName: string, value: any, type: 'number' | 'boolean' | 'string') => {
+    const handleChange = React.useCallback((propName: string, value: string, type: 'number' | 'boolean' | 'string') => {
         setCurrentProps(prev => ({
             ...prev,
             [propName]: type === 'number' ? parseFloat(value) || 0 : (type === 'boolean' ? value : value),
@@ -39,7 +40,7 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
         }
     };
 
-    const renderPropField = (key, value) => {
+    const renderPropField = (key: string, value: string) => {
         const commonInputStyle = { width: 'calc(100% - 12px)', padding: '8px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '10px', marginBottom: '6px', background: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)' };
         let inputElement;
 
@@ -53,7 +54,7 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
                 </select>
             );
         } else if (typeof value === 'boolean') {
-            inputElement = <input type="checkbox" checked={!!value} onChange={(e) => handleChange(key, e.target.checked, 'boolean')} />;
+            inputElement = <input type="checkbox" checked={!!value} onChange={(e) => handleChange(key, e.target.checked.toString(), 'boolean')} />;
         } else if (typeof value === 'number' || (typeof value === 'string' && !isNaN(parseFloat(value)) && (key.includes('size') || key.includes('width') || key.includes('height') || key.includes('padding') || key.includes('margin') || key.includes('gap') || key.includes('radius')))) {
             inputElement = <input type="number" style={commonInputStyle} value={value} onChange={(e) => handleChange(key, e.target.value, 'number')} />;
         } else if (typeof value === 'string' && (value.startsWith('#') || value.startsWith('rgb'))) {
@@ -85,17 +86,17 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
     };
 
     // Common offset options for positioning
-    const offsetOptions = ['auto', '0', '5px', '10px', '20px', '50%', '100px'] as const;
+    const offsetOptions = ['auto', '0', '5px', '10px', '20px', '50%', '100px'];
 
     const renderOffsetSelect = (key: 'top' | 'left' | 'right' | 'bottom') => {
-        const value = (currentProps as any)[key] ?? '';
-        const isCustom = value !== '' && !offsetOptions.includes(value as any);
+        const value = currentProps[key] ?? '';
+        const isCustom = value !== '' && typeof value === 'string' && !offsetOptions.includes(value);
         return (
             <div style={{ marginBottom: '10px' }}>
                 <label style={{ display: 'block', fontSize: '0.9em', marginBottom: '3px', textTransform: 'capitalize' }}>{key}:</label>
                 <select
                     style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '3px', marginBottom: '3px' }}
-                    value={isCustom ? 'custom' : (value === '' ? 'auto' : value)}
+                    value={isCustom ? 'custom' : (value === '' ? 'auto' : value as string)}
                     onChange={e => {
                         const v = e.target.value;
                         if (v === 'custom') return; // keep current, show input
@@ -136,7 +137,8 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
     };
 
     const renderBoxInputs = (boxKey: 'margin' | 'padding', label: string) => {
-        const [t, r, b, l] = parseBoxShorthand((currentProps as any)[boxKey]);
+        if (typeof currentProps[boxKey] !== 'string') return null;
+        const [t, r, b, l] = parseBoxShorthand(currentProps[boxKey]);
         const setSide = (side: 'top' | 'right' | 'bottom' | 'left', val: string) => {
             const next = { top: t, right: r, bottom: b, left: l } as Record<string, string>;
             next[side] = val;
@@ -201,7 +203,7 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
                 {component.type === 'icon' && (
                     <>
                         {renderPropField('name', currentProps.name || 'Square')}
-                        {renderPropField('size', currentProps.size || 24)}
+                        {renderPropField('size', (currentProps.size || 24).toString())}
                         {renderPropField('color', currentProps.color || '#111827')}
                     </>
                 )}
@@ -245,12 +247,12 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
                 )}
                 {Object.entries(currentProps).map(([key, value]) =>
                     (component.type === 'container' && key === 'flexDirection') ||
-                    ['margin','padding','width','height'].includes(key) ||
-                    (component.type === 'text' && ['bold','italic','underline'].includes(key)) ||
-                    (component.type === 'image' && ['position','top','left','right','bottom','background'].includes(key)) ||
-                    (component.type === 'icon' && ['name','size','color'].includes(key)) ||
-                    (component.type === 'input' && ['kind','label','placeholder'].includes(key))
-                        ? null : renderPropField(key, value)
+                        ['margin', 'padding', 'width', 'height'].includes(key) ||
+                        (component.type === 'text' && ['bold', 'italic', 'underline'].includes(key)) ||
+                        (component.type === 'image' && ['position', 'top', 'left', 'right', 'bottom', 'background'].includes(key)) ||
+                        (component.type === 'icon' && ['name', 'size', 'color'].includes(key)) ||
+                        (component.type === 'input' && ['kind', 'label', 'placeholder'].includes(key))
+                        ? null : renderPropField(key, value?.toString() || "")
                 )}
                 {/* Image advanced positioning controls */}
                 {component.type === 'image' && (
@@ -271,7 +273,7 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
                                 <option value="sticky">sticky</option>
                             </select>
                         </div>
-                        {['relative', 'absolute', 'fixed', 'sticky'].includes(currentProps.position) && (
+                        {['relative', 'absolute', 'fixed', 'sticky'].includes(currentProps.position || "") && (
                             <>
                                 {renderOffsetSelect('top')}
                                 {renderOffsetSelect('left')}
@@ -314,6 +316,7 @@ const PropertiesEditor = ({ component, onUpdateComponent, onRemoveComponent }: P
                     }
                 } catch (e) {
                     alert('Failed to copy JSON');
+                    console.error(e);
                 }
             }} style={{ background: '#111827', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer', width: '100%', marginTop: '10px' }}>
                 Copy JSON
