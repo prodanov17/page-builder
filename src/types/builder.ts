@@ -1,5 +1,61 @@
 // src/types/builder.ts
 
+export type AlignSelfType =
+  | "auto"
+  | "flex-start"
+  | "flex-end"
+  | "center"
+  | "baseline"
+  | "stretch";
+
+export type JustifyContentType =
+  | "flex-start"
+  | "flex-end"
+  | "center"
+  | "space-between"
+  | "space-around"
+  | "space-evenly";
+
+export interface Component {
+  id: string;
+  name?: string;
+  type: "button" | "input" | "container" | "text" | "image" | "icon" | "input";
+  props: {
+    [key: string]: string | number | boolean | undefined | null;
+    position?: string;
+    label?: string;
+    src?: string;
+    altText?: string;
+    width?: string;
+    height?: string;
+    content?: string;
+    fontSize?: string;
+    color?: string;
+    backgroundColor?: string;
+    padding?: string;
+    placeholder?: string;
+    name?: string;
+    size?: number;
+    justifyContent?: JustifyContentType;
+    flexDirection?: "row" | "column";
+    kind?: "text" | "checkbox" | "radio";
+  };
+  placement?: {
+    order?: number;
+    alignSelf?: AlignSelfType;
+  };
+  children?: Component[];
+}
+
+export interface Builder {
+  id: string;
+  name: string;
+  components: Component[];
+  styles: {
+    [key: string]: string | number;
+  };
+}
+
 export type PropertyEditorType =
   | "text"
   | "textarea"

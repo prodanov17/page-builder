@@ -1,7 +1,6 @@
 // src/renderer/CanvasRenderer.jsx
-import type { AlignSelfType, Component } from '@/hooks/useBuilder';
 import { componentMap } from '../builder-elements/componentMap';
-import type { ComponentType, PropsType } from '@/types/builder';
+import type { AlignSelfType, Component, ComponentType, PropsType } from '@/types/builder';
 
 interface CanvasRendererProps {
     components: Component[];

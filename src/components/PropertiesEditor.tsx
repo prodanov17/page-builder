@@ -1,4 +1,4 @@
-import type { Component } from '@/hooks/useBuilder';
+import type { Component } from '@/types/builder';
 import React from 'react';
 
 type PropertiesEditorProps = {

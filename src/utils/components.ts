@@ -2,8 +2,10 @@ import type { ComponentDefinition } from "@/types/builder";
 
 export const availableComponentsList: ComponentDefinition[] = [
   {
+    id: "",
     type: "text",
     label: "Text",
+    props: {},
     defaultProps: {
       content: "New Text Block",
       fontSize: "16px",
@@ -15,6 +17,8 @@ export const availableComponentsList: ComponentDefinition[] = [
     },
   },
   {
+    id: "",
+    props: {},
     type: "button",
     label: "Button",
     defaultProps: {
@@ -28,6 +32,8 @@ export const availableComponentsList: ComponentDefinition[] = [
     },
   },
   {
+    id: "",
+    props: {},
     type: "image",
     label: "Image",
     defaultProps: {
@@ -40,6 +46,8 @@ export const availableComponentsList: ComponentDefinition[] = [
     },
   },
   {
+    id: "",
+    props: {},
     type: "container",
     label: "Container (Column)",
     defaultProps: {
@@ -55,6 +63,8 @@ export const availableComponentsList: ComponentDefinition[] = [
     children: [],
   },
   {
+    id: "",
+    props: {},
     type: "container",
     label: "Container (Row)",
     defaultProps: {
@@ -71,6 +81,8 @@ export const availableComponentsList: ComponentDefinition[] = [
     children: [],
   },
   {
+    id: "",
+    props: {},
     type: "input",
     label: "Input",
     defaultProps: {
@@ -82,6 +94,8 @@ export const availableComponentsList: ComponentDefinition[] = [
     },
   },
   {
+    id: "",
+    props: {},
     type: "icon",
     label: "Icon",
     defaultProps: {
