@@ -3,17 +3,28 @@ import { componentMap } from '../builder-elements/componentMap';
 import type { AlignSelfType, Component, ComponentType, PropsType } from '@/types/builder';
 
 interface CanvasRendererProps {
+    ref: React.Ref<HTMLDivElement>;
     components: Component[];
     globalStyles: React.CSSProperties;
     onSelectComponent: (id: string) => void;
     selectedComponentId: string | null;
+    unselectComponent: () => void;
     onAddComponentRequestToContainer: (containerId: string, type: ComponentType, defaultProps?: PropsType, children?: Component[]) => void;
-    updateChildPlacement: (childId: string,
-        placement: { order?: number; alignSelf?: AlignSelfType },
-    ) => void;
+    updateChildPlacement: (childId: string, placement: { order?: number; alignSelf?: AlignSelfType; }) => void;
+    isEditorMode?: boolean;
 }
 
-const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedComponentId, onAddComponentRequestToContainer, updateChildPlacement }: CanvasRendererProps) => {
+const CanvasRenderer = ({
+    ref,
+    components,
+    globalStyles,
+    onSelectComponent,
+    selectedComponentId,
+    onAddComponentRequestToContainer,
+    updateChildPlacement,
+    unselectComponent,
+    isEditorMode = true,
+}: CanvasRendererProps) => {
     const renderComponent = (componentConfig: Component) => {
         const ComponentToRender = componentMap[componentConfig.type];
 
@@ -32,12 +43,13 @@ const CanvasRenderer = ({ components, globalStyles, onSelectComponent, selectedC
                 selectedComponentId={selectedComponentId} // Pass down for child selection logic in Container
                 onAddComponentRequest={onAddComponentRequestToContainer} // Pass down to containers
                 updateChildPlacement={updateChildPlacement} // Pass for containers
+                isEditorMode={isEditorMode}
             />
         );
     };
 
     return (
-        <div className="canvas" style={{ ...globalStyles, borderRadius: 12, background: '#fff' }}>
+        <div className="canvas" style={{ ...globalStyles, borderRadius: 12 }} ref={ref} onClick={unselectComponent}>
             {components.length === 0 && (
                 <div
                     style={{

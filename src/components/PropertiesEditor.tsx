@@ -1,6 +1,6 @@
-import type { Component } from '@/types/builder';
-import React, { useCallback, useEffect, useState } from 'react';
-import { ChevronDown, Trash2, Square, ArrowLeftRight, PanelTopDashed, Settings, Share, FileOutput, FileInput } from 'lucide-react';
+import type { Component, PageProperties } from '@/types/builder';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown, Trash2, Square, ArrowLeftRight, PanelTopDashed, Settings, Share, Pencil } from 'lucide-react';
 import { componentEditorSchema, pageEditorSchema, type ControlDefinition } from '@/utils/editor-schema';
 
 type PropertiesEditorProps = {
@@ -10,16 +10,22 @@ type PropertiesEditorProps = {
     onRemoveComponent: (id: string) => void;
     pageStyles: React.CSSProperties;
     onUpdatePageStyles: (newStyles: React.CSSProperties) => void;
+    pageProperties: PageProperties;
+    onUpdatePageProperties: (newProperties: PageProperties) => void;
+    onRenameComponent: (id: string, newName: string) => void;
 };
 
 type ComponentEditorViewProps = {
     component: Component;
     onUpdateComponent: (id: string, update: Partial<Component>) => void;
     onRemoveComponent: (id: string) => void;
+    onRenameComponent: (id: string, newName: string) => void;
 };
 
 type PageEditorViewProps = {
     pageStyles: React.CSSProperties;
+    pageProperties: PageProperties;
+    onUpdatePageProperties: (newProperties: PageProperties) => void;
     onUpdatePageStyles: (newStyles: React.CSSProperties) => void;
 };
 
@@ -130,14 +136,38 @@ const BoxControl: React.FC<{ label: string, value: string, onChange: (value: str
 
 // --- View 1: Editing a Selected Component ---
 
-const ComponentEditorView: React.FC<ComponentEditorViewProps> = ({ component, onUpdateComponent, onRemoveComponent }) => {
-    const [currentProps, setCurrentProps] = useState<Record<string, any>>(component.props ?? {});
+const ComponentEditorView: React.FC<ComponentEditorViewProps> = ({ component, onUpdateComponent, onRemoveComponent, onRenameComponent }) => {
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [nameValue, setNameValue] = useState(component.name || '');
+    const nameInputRef = useRef<HTMLInputElement>(null);
+    const [currentProps, setCurrentProps] = useState(component.props ?? {});
 
     useEffect(() => {
         setCurrentProps(component.props ?? {});
     }, [component]);
 
-    const handlePropChange = useCallback((propName: string, value: any) => {
+    // Effect to focus input when editing starts
+    useEffect(() => {
+        if (isEditingName && nameInputRef.current) {
+            nameInputRef.current.focus();
+            nameInputRef.current.select();
+        }
+    }, [isEditingName]);
+
+    const handleNameChange = () => {
+        if (nameValue.trim()) {
+            onRenameComponent(component.id, nameValue.trim());
+        }
+        setIsEditingName(false);
+    };
+
+    const handleNameKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleNameChange();
+        else if (e.key === 'Escape') setIsEditingName(false);
+    };
+
+
+    const handlePropChange = useCallback((propName: string, value: string | number) => {
         setCurrentProps(prev => ({ ...prev, [propName]: value }));
     }, []);
 
@@ -172,7 +202,32 @@ const ComponentEditorView: React.FC<ComponentEditorViewProps> = ({ component, on
     return (
         <div className="flex flex-col h-full font-sans">
             <div className="p-3 border-b border-slate-200">
-                <h4 className="m-0 text-base font-semibold inline-block capitalize">{component.type}</h4>
+                {isEditingName ? (
+                    <input
+                        ref={nameInputRef}
+                        type="text"
+                        value={nameValue}
+                        onChange={(e) => setNameValue(e.target.value)}
+                        onBlur={handleNameChange}
+                        onKeyDown={handleNameKeyDown}
+                        className="m-0 text-base font-semibold bg-white border border-blue-500 rounded px-1"
+                    />
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <h4
+                            className="m-0 text-base font-semibold inline-block cursor-pointer"
+                            onDoubleClick={() => setIsEditingName(true)}
+                        >
+                            {component.name || <span className="capitalize">{component.type}</span>}
+                        </h4>
+                        <button
+                            onClick={() => setIsEditingName(true)}
+                            className="text-slate-500 hover:text-slate-800"
+                        >
+                            <Pencil size={14} />
+                        </button>
+                    </div>
+                )}
                 <span className="text-xs text-slate-400 ml-2">({component.id.slice(-5)})</span>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbars">
@@ -192,14 +247,28 @@ const ComponentEditorView: React.FC<ComponentEditorViewProps> = ({ component, on
 
 // --- View 2: Editing Page Styles ---
 
-const PageEditorView: React.FC<PageEditorViewProps> = ({ pageStyles, onUpdatePageStyles }) => {
+const PageEditorView: React.FC<PageEditorViewProps> = ({ pageProperties, onUpdatePageProperties, pageStyles, onUpdatePageStyles }) => {
+    const pageName = pageProperties.name || 'Untitled Page';
     const [currentStyles, setCurrentStyles] = useState(pageStyles);
+    const [currentName, setCurrentName] = useState(pageName);
+
+    useEffect(() => {
+        setCurrentName(pageName);
+    }, [pageName]);
+
+    useEffect(() => {
+        if (currentName === pageName) return;
+        const handler = setTimeout(() => {
+            onUpdatePageProperties({ ...pageProperties, name: currentName });
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [currentName, pageName, onUpdatePageProperties, pageProperties]);
 
     useEffect(() => {
         setCurrentStyles(pageStyles);
     }, [pageStyles]);
 
-    const handleStyleChange = useCallback((styleName: string, value: any) => {
+    const handleStyleChange = useCallback((styleName: string, value: string) => {
         setCurrentStyles(prev => ({ ...prev, [styleName]: value }));
     }, []);
 
@@ -230,6 +299,17 @@ const PageEditorView: React.FC<PageEditorViewProps> = ({ pageStyles, onUpdatePag
                 <h4 className="m-0 text-base font-semibold">Page Settings</h4>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbars">
+                <PropertyGroup title="General">
+                    <ControlWrapper label="Page Name">
+                        <input
+                            type="text"
+                            className={baseInputStyles}
+                            value={currentName}
+                            onChange={(e) => setCurrentName(e.target.value)}
+                        />
+                    </ControlWrapper>
+                </PropertyGroup>
+
                 {pageEditorSchema.map(group => (
                     <PropertyGroup key={group.title} title={group.title}>{group.controls.map(renderControl)}</PropertyGroup>
                 ))}
@@ -244,24 +324,6 @@ const PageEditorView: React.FC<PageEditorViewProps> = ({ pageStyles, onUpdatePag
                         <Share size={16} />
                         Publish site
                     </button>
-
-                    <button
-                        className="w-full p-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 
-                 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        onClick={() => { }}
-                    >
-                        <FileInput size={16} />
-                        Import
-                    </button>
-
-                    <button
-                        className="w-full p-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2 
-                 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        onClick={() => { }}
-                    >
-                        <FileOutput size={16} />
-                        Export
-                    </button>
                 </div>
             </div>
 
@@ -273,12 +335,13 @@ const PageEditorView: React.FC<PageEditorViewProps> = ({ pageStyles, onUpdatePag
 
 // --- Main Router Component ---
 
-const PropertiesEditor: React.FC<PropertiesEditorProps> = ({ component, onUpdateComponent, onRemoveComponent, pageStyles, onUpdatePageStyles }) => {
+const PropertiesEditor: React.FC<PropertiesEditorProps> = ({ component, onUpdateComponent, onRemoveComponent, pageStyles, onUpdatePageStyles, pageProperties, onUpdatePageProperties, onRenameComponent }) => {
     if (component) {
         return (
             <ComponentEditorView
                 key={component.id}
                 component={component}
+                onRenameComponent={onRenameComponent}
                 onUpdateComponent={onUpdateComponent}
                 onRemoveComponent={onRemoveComponent}
             />
@@ -287,6 +350,8 @@ const PropertiesEditor: React.FC<PropertiesEditorProps> = ({ component, onUpdate
 
     return (
         <PageEditorView
+            pageProperties={pageProperties}
+            onUpdatePageProperties={onUpdatePageProperties}
             pageStyles={pageStyles}
             onUpdatePageStyles={onUpdatePageStyles}
         />

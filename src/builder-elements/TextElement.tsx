@@ -15,6 +15,8 @@ const TextElement: FC<BaseComponentProps<TextProps>> = ({ id, props, onSelect, i
         letterSpacing: props.letterSpacing || undefined,
         textTransform: props.textTransform || undefined,
         cursor: 'pointer',
+        width: props.width || 'auto',
+        height: props.height || 'auto',
 
         outline: isSelected ? '2px solid #3b82f6' : 'none', // A vibrant blue outline
 

@@ -48,7 +48,7 @@ export const paletteItems: PaletteItem[] = [
         type: 'image',
         label: 'Image',
         icon: <ImageIcon size={16} />,
-        defaultProps: { src: 'https://via.placeholder.com/150', width: '150px', height: '150px', alt: 'Placeholder' },
+        defaultProps: { width: '150px', height: '150px', alt: 'Placeholder' },
     },
     {
         type: 'input',

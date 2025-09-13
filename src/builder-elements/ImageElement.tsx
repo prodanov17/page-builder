@@ -5,16 +5,16 @@ const ImageElement: FC<BaseComponentProps<ImageProps>> = ({ id, props, onSelect,
     const style = {
         width: props.width ?? 'auto',
         height: props.height ?? 'auto',
-        border: `2px solid ${isSelected ? 'red' : 'transparent'}`,
+        border: `2px solid ${isSelected ? 'dodgerblue' : 'transparent'}`,
         margin: props.margin ?? '0',
         objectFit: props.objectFit || 'cover',
         borderRadius: props.borderRadius || '0px',
         cursor: 'pointer',
         position: props.position || 'static',
-        top: props.top,
-        left: props.left,
-        right: props.right,
-        bottom: props.bottom,
+        top: props.top || 0,
+        left: props.left || 'auto',
+        right: props.right || 'auto',
+        bottom: props.bottom || 'auto',
     } as const;
 
     const handleClick = (e: MouseEvent) => {
@@ -24,7 +24,7 @@ const ImageElement: FC<BaseComponentProps<ImageProps>> = ({ id, props, onSelect,
 
     return (
         <img
-            src={props.src || 'https://via.placeholder.com/150x100.png?text=Image'}
+            src={props.src || 'https://placeholder.pics/svg/300'}
             alt={props.alt || 'placeholder image'}
             style={style}
             onClick={handleClick}

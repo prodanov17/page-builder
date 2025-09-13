@@ -6,14 +6,27 @@ import { componentMap } from './componentMap';
 const alignSelfOptions = ['auto', 'flex-start', 'flex-end', 'center', 'baseline', 'stretch'] as const;
 
 const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
-    ({ id, props, children = [], onSelect, isSelected, selectedComponentId, onAddComponentRequest, updateChildPlacement }, ref) => {
+    ({
+        id,
+        props,
+        children = [],
+        onSelect,
+        isSelected,
+        selectedComponentId,
+        onAddComponentRequest,
+        updateChildPlacement,
+        isEditorMode = true,
+    }, ref) => {
         const isRow = props.flexDirection === 'row' || props.flexDirection === 'row-reverse';
 
         // Use the modern 'outline' for the container's own selection indicator
         const style = {
             padding: props.padding ?? '0',
             backgroundColor: props.backgroundColor || 'transparent',
-            border: `1px dashed ${props.borderColor || '#cbd5e1'}`, // A subtle default border
+            border: isEditorMode
+                ? `1px dashed ${isSelected ? '#3b82f6' : '#cbd5e1'}` // Dashed border in editor
+                : props.border || 'none', // The component's actual border in preview
+
             margin: props.margin ?? '0',
             minHeight: props.minHeight || '50px',
             display: props.display || 'flex',
@@ -27,7 +40,10 @@ const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
             backgroundImage: props.backgroundImage ? `url('${props.backgroundImage}')` : undefined,
             backgroundSize: props.backgroundImage ? 'cover' : undefined,
             backgroundPosition: props.backgroundImage ? 'center' : undefined,
-            outline: isSelected ? '2px solid #3b82f6' : 'none',
+            outline: isEditorMode && isSelected
+                ? '2px solid #3b82f6'
+                : 'none',
+
             outlineOffset: '2px',
         } as const;
 
@@ -62,7 +78,11 @@ const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
             const isChildSelected = selectedComponentId === childComp.id;
 
             return (
-                <div key={childComp.id} className="relative" style={{ order: childComp.placement?.order ?? idx, alignSelf: childComp.placement?.alignSelf ?? 'auto' }}>
+                <div
+                    key={childComp.id}
+                    data-editor-element="true" // Marker for final export to exclude editor-only elements
+                    style={{ order: childComp.placement?.order ?? idx, alignSelf: childComp.placement?.alignSelf ?? 'auto' }}
+                >
                     {/* The Child Component */}
                     <ChildComponentToRender
                         {...childComp}
@@ -71,10 +91,11 @@ const ContainerElement = forwardRef<HTMLDivElement, ContainerComponentProps>(
                         selectedComponentId={selectedComponentId}
                         onAddComponentRequest={onAddComponentRequest}
                         updateChildPlacement={updateChildPlacement}
+                        isEditorMode={isEditorMode}
                     />
 
                     {/* The Overlay Toolbar - Renders only when conditions are met */}
-                    {isRow && isChildSelected && (
+                    {isRow && isChildSelected && isEditorMode && (
                         <div className="absolute top-[-32px] left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 p-1 bg-white rounded-md shadow-md border border-slate-200">
                             <button onClick={() => handleMove(childComp.id, 'left')} className="p-1 rounded hover:bg-slate-100"><ArrowLeft size={16} /></button>
                             <button onClick={() => handleMove(childComp.id, 'right')} className="p-1 rounded hover:bg-slate-100"><ArrowRight size={16} /></button>

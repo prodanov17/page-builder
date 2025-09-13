@@ -37,7 +37,7 @@ export const availableComponentsList: ComponentDefinition[] = [
     type: "image",
     label: "Image",
     defaultProps: {
-      src: "",
+      src: "https://placeholder.pics/svg/300",
       alt: "My Image",
       width: "auto",
       height: "auto",
@@ -49,7 +49,7 @@ export const availableComponentsList: ComponentDefinition[] = [
     id: "",
     props: {},
     type: "container",
-    label: "Container (Row)",
+    label: "Container",
     defaultProps: {
       padding: "0",
       margin: "0",

@@ -1,12 +1,30 @@
 // src/hooks/useBuilder.js
-import { useState, useCallback } from "react";
-import type { AlignSelfType, Builder, Component } from "../types/builder";
+import { useState, useCallback, useEffect, useRef } from "react";
+import type {
+  AlignSelfType,
+  Builder,
+  Component,
+  PageProperties,
+} from "../types/builder";
+import { findComponentAndParent } from "@/utils/utility";
 
 const useBuilder = () => {
-  const [builder, setBuilderInternal] = useState<Builder | undefined>();
+  const [builder, setBuilderInternal] = useState<Builder | null>();
 
-  // Function to initialize or fully replace the builder state
+  // History management state
+  const [history, setHistory] = useState<{ stack: Builder[]; index: number }>({
+    stack: [],
+    index: -1,
+  });
+
+  const isTimeTraveling = useRef(false); // A flag to prevent recording undo/redo actions
+
   const setBuilder = useCallback((newBuilderState?: Builder) => {
+    if (newBuilderState) {
+      setHistory({ stack: [newBuilderState], index: 0 });
+    } else {
+      setHistory({ stack: [], index: -1 });
+    }
     setBuilderInternal(newBuilderState);
   }, []);
 
@@ -241,10 +259,15 @@ const useBuilder = () => {
   const setStyles = useCallback(
     (newStyles: { [key: string]: string | number }) => {
       if (!builder) return;
-      setBuilderInternal((prevBuilder) => ({
-        ...prevBuilder!,
-        styles: { ...prevBuilder!.styles, ...newStyles },
-      }));
+      // Use the functional update form to get the latest state
+      setBuilderInternal((prevBuilder) => {
+        if (!prevBuilder) return undefined; // Should not happen if builder is defined, but good for safety
+
+        return {
+          ...prevBuilder,
+          styles: { ...prevBuilder.styles, ...newStyles },
+        };
+      });
     },
     [builder],
   );
@@ -280,12 +303,145 @@ const useBuilder = () => {
     [builder],
   );
 
-  // getBuilder is not strictly needed as `builder` is returned.
-  // const getBuilder = () => builder;
+  // --- Undo/Redo functions now use the new history object ---
+  const canUndo = history.index > 0;
+  const canRedo = history.index < history.stack.length - 1;
+
+  const undo = useCallback(() => {
+    if (canUndo) {
+      isTimeTraveling.current = true;
+      const newIndex = history.index - 1;
+      setHistory((prev) => ({ ...prev, index: newIndex }));
+      setBuilderInternal(history.stack[newIndex]);
+      setTimeout(() => {
+        isTimeTraveling.current = false;
+      }, 50);
+    }
+  }, [canUndo, history]);
+
+  const redo = useCallback(() => {
+    if (canRedo) {
+      isTimeTraveling.current = true;
+      const newIndex = history.index + 1;
+      setHistory((prev) => ({ ...prev, index: newIndex }));
+      setBuilderInternal(history.stack[newIndex]);
+      setTimeout(() => {
+        isTimeTraveling.current = false;
+      }, 50);
+    }
+  }, [canRedo, history]);
 
   const resetBuilder = useCallback((initialBuilderData?: Builder) => {
     setBuilderInternal(initialBuilderData); // Allow resetting to a specific state or undefined
   }, []);
+
+  const updatePageProperties = useCallback(
+    (newProperties: PageProperties) => {
+      if (!builder) return;
+      setBuilderInternal((prevBuilder) => ({
+        ...prevBuilder!,
+        ...newProperties,
+      }));
+    },
+    [builder],
+  );
+
+  const moveComponent = useCallback(
+    (componentId: string, direction: "up" | "down") => {
+      if (!builder) return;
+
+      setBuilderInternal((prevBuilder) => {
+        if (!prevBuilder) return prevBuilder;
+
+        const result = findComponentAndParent(
+          prevBuilder.components,
+          componentId,
+        );
+        if (!result) return prevBuilder;
+
+        const { parent, index } = result;
+        const siblings = parent ? parent.children! : prevBuilder.components;
+        const newIndex = direction === "up" ? index - 1 : index + 1;
+
+        if (newIndex < 0 || newIndex >= siblings.length) {
+          return prevBuilder; // Cannot move
+        }
+
+        const newSiblings = [...siblings];
+        // Swap the elements in the new array
+        [newSiblings[index], newSiblings[newIndex]] = [
+          newSiblings[newIndex],
+          newSiblings[index],
+        ];
+
+        // If the component was at the root level
+        if (!parent) {
+          return { ...prevBuilder, components: newSiblings };
+        }
+
+        // If the component is nested, we need to update the parent's children
+        const updateTree = (nodes: Component[]): Component[] => {
+          return nodes.map((node) => {
+            if (node.id === parent.id) {
+              return { ...node, children: newSiblings };
+            }
+            if (node.children) {
+              return { ...node, children: updateTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        return {
+          ...prevBuilder,
+          components: updateTree(prevBuilder.components),
+        };
+      });
+    },
+    [builder],
+  );
+
+  const renameComponent = useCallback(
+    (componentId: string, newName: string) => {
+      setBuilderInternal((prevBuilder) => {
+        if (!prevBuilder) return prevBuilder;
+
+        const updateNameRecursive = (nodes: Component[]): Component[] => {
+          return nodes.map((node) => {
+            if (node.id === componentId) {
+              return { ...node, name: newName };
+            }
+            if (node.children) {
+              return { ...node, children: updateNameRecursive(node.children) };
+            }
+            return node;
+          });
+        };
+
+        return {
+          ...prevBuilder,
+          components: updateNameRecursive(prevBuilder.components),
+        };
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (isTimeTraveling.current || !builder) {
+      return;
+    }
+
+    // Use the functional update form to avoid dependency issues
+    setHistory((prevHistory) => {
+      const newStack = prevHistory.stack.slice(0, prevHistory.index + 1);
+      newStack.push(builder);
+      return {
+        stack: newStack,
+        index: newStack.length - 1,
+      };
+    });
+  }, [builder]); // The only true dependency is the builder state itself.
 
   return {
     builder,
@@ -295,7 +451,14 @@ const useBuilder = () => {
     updateComponent,
     setStyles,
     resetBuilder,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
     updateChildPlacement, // <-- add to return
+    updatePageProperties,
+    moveComponent,
+    renameComponent,
   };
 };
 

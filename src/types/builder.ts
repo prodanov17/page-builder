@@ -168,3 +168,7 @@ export interface ComponentDefinition {
 }
 
 export type PropsType = Record<string, string | number | boolean | undefined>;
+
+export interface PageProperties {
+  name: string;
+}

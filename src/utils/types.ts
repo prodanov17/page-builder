@@ -28,6 +28,8 @@ export interface TextProps extends BaseProps {
   lineHeight?: string | number;
   letterSpacing?: string | number;
   textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  width?: string;
+  height?: string;
 }
 
 export interface ImageProps extends BaseProps {
@@ -56,6 +58,7 @@ export interface ContainerProps extends BaseProps {
   width?: string;
   height?: string;
   name?: string;
+  border?: string;
   backgroundImage?: string;
 }
 
@@ -100,6 +103,7 @@ export interface ContainerComponentProps
     childId: string,
     placement: Partial<ChildPlacement>,
   ) => void;
+  isEditorMode?: boolean;
 }
 
 export type ComponentProps =

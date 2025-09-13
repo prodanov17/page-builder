@@ -9,6 +9,8 @@ type SidebarProps = {
     onSelect: (id: string) => void;
     onRemove: (id: string) => void;
     onAddPrebuilt: (component: Omit<Component, 'id'>) => void;
+    onMove: (componentId: string, direction: 'up' | 'down') => void;
+    onRename: (componentId: string, newName: string) => void;
 };
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
@@ -33,6 +35,8 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                     <ComponentsList
                         components={props.components} selectedId={props.selectedId}
                         onSelect={props.onSelect} onRemove={props.onRemove}
+                        onRename={props.onRename}
+                        onMove={props.onMove}
                     />
                 )}
                 {activeTab === 'components' && <PrebuiltComponents onAddComponent={props.onAddPrebuilt} />}

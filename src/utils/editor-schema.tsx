@@ -51,6 +51,7 @@ export const componentEditorSchema: Record<ComponentType, GroupDefinition[]> = {
                 { prop: 'backgroundColor', label: 'Background', control: 'color' },
                 { prop: 'borderRadius', label: 'Radius', control: 'text' },
                 { prop: 'border', label: 'Border', control: 'text' },
+                { prop: 'backgroundImage', label: 'Background Image URL', control: 'text' },
             ],
         },
         sizingGroup // Reuse the shared group
@@ -73,6 +74,7 @@ export const componentEditorSchema: Record<ComponentType, GroupDefinition[]> = {
                 },
             ],
         },
+        sizingGroup // Reuse the shared group
     ],
     button: [
         { title: 'Content', controls: [{ prop: 'text', label: 'Button Text', control: 'text' }] },
@@ -91,6 +93,15 @@ export const componentEditorSchema: Record<ComponentType, GroupDefinition[]> = {
             title: 'Content', controls: [
                 { prop: 'src', label: 'Source URL', control: 'text' },
                 { prop: 'alt', label: 'Alt Text', control: 'text' },
+            ]
+        },
+        {
+            title: 'Positioning', controls: [
+                { prop: 'position', label: 'Position', control: 'select', options: [{ value: 'static', label: 'Static' }, { value: 'relative', label: 'Relative' }, { value: 'absolute', label: 'Absolute' }, { value: 'fixed', label: 'Fixed' }, { value: 'sticky', label: 'Sticky' }] },
+                { prop: 'top', label: 'Top', control: 'text' },
+                { prop: 'left', label: 'Left', control: 'text' },
+                { prop: 'right', label: 'Right', control: 'text' },
+                { prop: 'bottom', label: 'Bottom', control: 'text' },
             ]
         },
         {
@@ -129,12 +140,6 @@ export const componentEditorSchema: Record<ComponentType, GroupDefinition[]> = {
 };
 
 export const pageEditorSchema: GroupDefinition[] = [
-    {
-        title: 'Page Settings',
-        controls: [
-            { prop: 'name', label: 'Page Name', control: 'text' },
-        ]
-    },
     {
         title: 'Canvas Styles',
         controls: [
